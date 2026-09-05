@@ -1,5 +1,5 @@
 appId: com.xuanshu.workbench
-productName: 玄枢
+productName: 玄枢八术
 copyright: Copyright © 2026 玄枢
 directories:
   output: release
@@ -26,7 +26,7 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: 玄枢
-  uninstallDisplayName: 玄枢
+  shortcutName: 玄枢八术
+  uninstallDisplayName: 玄枢八术
 portable:
   artifactName: "${productName}-portable-${version}-${arch}.${ext}"

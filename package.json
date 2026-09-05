@@ -2,7 +2,7 @@
   "name": "xuanshu-plus",
   "version": "0.1.0",
   "private": true,
-  "description": "玄枢 xuanshu · 五术综合占卜工作台（排盘确定性 + 解释开放性 + 路径可学习）",
+  "description": "玄枢八术 xuanshu-plus · 综合术数工作台（排盘确定性 + 解释开放性 + 路径可学习）",
   "type": "module",
   "workspaces": [
     "packages/*",

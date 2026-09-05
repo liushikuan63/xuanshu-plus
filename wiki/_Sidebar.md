@@ -1,4 +1,4 @@
-## 玄枢 Wiki
+## 玄枢八术 Wiki
 
 - [首页](Home.md)
 - [系统架构](Architecture.md)

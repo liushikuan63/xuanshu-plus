@@ -229,7 +229,7 @@ function createWindow(): void {
     minWidth: 720,
     minHeight: 560,
     show: false,
-    title: '玄枢 · 五术综合占卜工作台',
+    title: '玄枢 · 八术综合占卜工作台',
     backgroundColor: '#f6f3ec',
     webPreferences: {
       preload: join(__dirname, 'preload.js'),

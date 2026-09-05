@@ -532,7 +532,7 @@ export function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>玄枢 · 五术综合占卜工作台</h1>
+        <h1>玄枢 · 八术综合占卜工作台</h1>
         <p>排盘确定性 · 解释开放性 · 路径可学习（六爻 / 梅花 / 小六壬 / 奇门 / 大六壬 / 金口诀 / 八字 / 紫微）</p>
         <div className="chips">
           <button className={`chip ${mode === 'cast' ? 'active' : ''}`} onClick={() => setMode('cast')}>占卜工作台</button>

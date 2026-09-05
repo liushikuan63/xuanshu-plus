@@ -3,7 +3,7 @@
  * 数据来自启动时已预导入的 builtinCorpus（books 分组的 CorpusSection[]）。
  */
 import { useMemo, useState } from 'react';
-import type { CorpusSection } from '@xuanshu/knowledge';
+import { includesNormalizedText, type CorpusSection } from '@xuanshu/knowledge';
 
 interface ReaderViewProps {
   corpus: CorpusSection[];
@@ -64,7 +64,7 @@ export function ReaderView({ corpus }: ReaderViewProps) {
     const pool = chapter ? chapter.segs : (book?.chapters.flatMap((c) => c.segs) ?? []);
     const q = filter.trim();
     if (!q) return pool;
-    return pool.filter((s) => s.text.includes(q));
+    return pool.filter((s) => includesNormalizedText(s.text, q));
   }, [chapter, book, filter]);
 
   const modeCount = useMemo(() => {

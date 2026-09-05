@@ -11,6 +11,7 @@ export const ART_LABELS: Record<string, string> = {
   ziwei: '紫微斗数',
   qimen: '奇门遁甲',
   liuren: '大六壬',
+  jinkou: '金口诀',
 };
 
 /** id → 中文显示名；未知 id 原样回退 */

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import type { ArtType, CategoryId, RuleHit, ShuPlugin, Timeline } from '@xuanshu/core';
+import type { ArtType, CategoryId, Playbook, RuleHit, ShuPlugin, Timeline } from '@xuanshu/core';
 import {
   castLiuyao,
   castMeihua,
@@ -29,6 +29,7 @@ import { CaseCenterView } from './CaseCenterView';
 
 const AlmanacView = lazy(async () => ({ default: (await import('./AlmanacView')).AlmanacView }));
 const DestinyToolsView = lazy(async () => ({ default: (await import('./DestinyToolsView')).DestinyToolsView }));
+const PlaybookCenterView = lazy(async () => ({ default: (await import('./PlaybookCenterView')).PlaybookCenterView }));
 
 for (const plugin of [liuyaoPlugin, meihuaPlugin, baziPlugin, ziweiPlugin, xiaoliurenPlugin, qimenPlugin, liurenPlugin, jinkouPlugin]) {
   if (!hasPlugin(plugin.id)) registerPlugin(plugin);
@@ -100,7 +101,8 @@ export function App() {
   const [kbLoading, setKbLoading] = useState(true);
   const [kbError, setKbError] = useState('');
   const [readerCorpus, setReaderCorpus] = useState<CorpusSection[]>([]);
-  const [mode, setMode] = useState<'cast' | 'reader' | 'almanac' | 'destiny' | 'cases'>('cast');
+  const [mode, setMode] = useState<'cast' | 'reader' | 'almanac' | 'destiny' | 'playbooks' | 'cases'>('cast');
+  const [readerTarget, setReaderTarget] = useState<{ canonicalId?: string; book?: string; query?: string; key: number } | null>(null);
 
   // 异步从 IndexedDB 恢复知识库快照（命中缓存免重建 BM25 索引；语料版本变化自动重建）
   useEffect(() => {
@@ -538,8 +540,9 @@ export function App() {
           <button className={`chip ${mode === 'cast' ? 'active' : ''}`} onClick={() => setMode('cast')}>占卜工作台</button>
           <button className={`chip ${mode === 'almanac' ? 'active' : ''}`} onClick={() => setMode('almanac')}>万年历</button>
           <button className={`chip ${mode === 'destiny' ? 'active' : ''}`} onClick={() => setMode('destiny')}>命理工具</button>
+          <button className={`chip ${mode === 'playbooks' ? 'active' : ''}`} onClick={() => setMode('playbooks')}>路径卡</button>
           <button className={`chip ${mode === 'cases' ? 'active' : ''}`} onClick={() => setMode('cases')}>案例本</button>
-          <button className={`chip ${mode === 'reader' ? 'active' : ''}`} onClick={() => setMode('reader')}>典籍阅读</button>
+          <button className={`chip ${mode === 'reader' ? 'active' : ''}`} onClick={() => { setReaderTarget(null); setMode('reader'); }}>典籍阅读</button>
         </div>
       </header>
 
@@ -547,7 +550,13 @@ export function App() {
         {mode === 'reader' ? (
           kbLoading
             ? <section className="card"><p className="meta">典籍载入中…</p></section>
-            : <ReaderView corpus={readerCorpus} />
+            : <ReaderView
+                key={readerTarget?.key ?? 'reader'}
+                corpus={readerCorpus}
+                initialCanonicalId={readerTarget?.canonicalId}
+                initialBook={readerTarget?.book}
+                initialQuery={readerTarget?.query}
+              />
         ) : mode === 'almanac' ? (
           <Suspense fallback={<section className="card"><p className="meta">万年历载入中…</p></section>}>
             <AlmanacView />
@@ -555,6 +564,21 @@ export function App() {
         ) : mode === 'destiny' ? (
           <Suspense fallback={<section className="card"><p className="meta">命理工具载入中…</p></section>}>
             <DestinyToolsView />
+          </Suspense>
+        ) : mode === 'playbooks' ? (
+          <Suspense fallback={<section className="card"><p className="meta">路径卡载入中…</p></section>}>
+            <PlaybookCenterView
+              onUse={(selected: Playbook) => {
+                setFreeMode(false);
+                pickCategory(selected.category);
+                switchArt(selected.arts.primary);
+                setMode('cast');
+              }}
+              onRead={(canonicalId, book, query) => {
+                setReaderTarget({ canonicalId, book, query, key: Date.now() });
+                setMode('reader');
+              }}
+            />
           </Suspense>
         ) : mode === 'cases' ? (
           <CaseCenterView
@@ -608,6 +632,7 @@ export function App() {
                 {playbook.yongShen.length > 0 && <li>取用神：{playbook.yongShen.map((y) => `${y.condition}→${y.yongShen}`).slice(0, 3).join('；')}</li>}
                 {playbook.readingList.length > 0 && <li>读哪本书：{playbook.readingList.slice(0, 2).map((r) => `《${r.book}》${r.chapter}`).join('、')}</li>}
               </ul>
+              <button className="secondary small" onClick={() => setMode('playbooks')}>查看完整路径卡</button>
             </div>
           )}
         </section>

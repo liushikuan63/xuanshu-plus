@@ -7,6 +7,9 @@ import { includesNormalizedText, type CorpusSection } from '@xuanshu/knowledge';
 
 interface ReaderViewProps {
   corpus: CorpusSection[];
+  initialCanonicalId?: string;
+  initialBook?: string;
+  initialQuery?: string;
 }
 
 /** 文本版本：扫描文（OCR 原样）／真实校准文字（定本）／注释文／白话文 */
@@ -29,13 +32,14 @@ function versionedText(s: CorpusSection, mode: TextMode): { body: string; fallba
   }
 }
 
-export function ReaderView({ corpus }: ReaderViewProps) {
+export function ReaderView({ corpus, initialCanonicalId, initialBook, initialQuery = '' }: ReaderViewProps) {
   const books = useMemo(() => {
-    const m = new Map<string, { chapters: Map<string, CorpusSection[]>; count: number }>();
+    const m = new Map<string, { chapters: Map<string, CorpusSection[]>; count: number; canonicalIds: Set<string> }>();
     for (const c of corpus) {
       const book = c.book ?? '未名';
-      const b = m.get(book) ?? { chapters: new Map(), count: 0 };
+      const b = m.get(book) ?? { chapters: new Map(), count: 0, canonicalIds: new Set<string>() };
       b.count += 1;
+      if (c.canonicalId) b.canonicalIds.add(c.canonicalId);
       const ch = c.chapter ?? '全卷';
       const list = b.chapters.get(ch) ?? [];
       list.push(c);
@@ -45,14 +49,20 @@ export function ReaderView({ corpus }: ReaderViewProps) {
     return [...m.entries()].map(([book, b]) => ({
       book,
       count: b.count,
+      canonicalIds: [...b.canonicalIds],
       chapters: [...b.chapters.entries()].map(([chapter, segs]) => ({ chapter, segs })),
     }));
   }, [corpus]);
 
-  const [bookName, setBookName] = useState<string>(books[0]?.book ?? '');
+  const requestedBook = books.find((candidate) => (
+    (initialCanonicalId && candidate.canonicalIds.some((id) => (
+      id === initialCanonicalId || id.startsWith(`${initialCanonicalId}.`) || initialCanonicalId.startsWith(`${id}.`)
+    ))) || (initialBook && (candidate.book === initialBook || candidate.book.includes(initialBook)))
+  ));
+  const [bookName, setBookName] = useState<string>(requestedBook?.book ?? books[0]?.book ?? '');
   const [chapterName, setChapterName] = useState<string>('');
-  const [filter, setFilter] = useState('');
-  const [showAllBooks, setShowAllBooks] = useState(false);
+  const [filter, setFilter] = useState(initialQuery);
+  const [showAllBooks, setShowAllBooks] = useState(Boolean(initialQuery));
   const [mode, setMode] = useState<TextMode>('calib');
 
   const book = books.find((b) => b.book === bookName) ?? books[0];

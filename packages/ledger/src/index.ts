@@ -4,3 +4,4 @@ export * from './store.js';
 export * from './localstore.js';
 export * from './feedback.js';
 export * from './io.js';
+export * from './timing.js';

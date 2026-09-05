@@ -4,6 +4,7 @@ import { MemoryCaseStore, makeCaseRecord } from './store.js';
 import { LocalCaseStore, memoryStorage } from './localstore.js';
 import { applyOutcome, calibrate } from './feedback.js';
 import { exportCsv, exportJson, exportMarkdown, isIncomingCaseNewer, parseCaseImport } from './io.js';
+import { LocalFollowupStore, aggregateWindowStats, type WindowFollowup } from './timing.js';
 import type { CaseRecord } from './schema.js';
 
 function sampleCase(over: Partial<CaseRecord> = {}): CaseRecord {
@@ -207,5 +208,49 @@ describe('导出', () => {
     const md = exportMarkdown([sampleCase()]);
     expect(md).toContain('用神旺相');
     expect(md).toContain('liuyao.lost.ji.wangxiang');
+  });
+});
+
+describe('应期窗口回收', () => {
+  const row = (over: Partial<WindowFollowup> = {}): WindowFollowup => ({
+    key: over.key ?? 'c1|2026-09-01|liuyao.timeline.ying-value',
+    caseId: over.caseId ?? 'c1', artType: over.artType ?? 'liuyao', category: over.category ?? '失物',
+    date: over.date ?? '2026-09-01', ruleId: over.ruleId ?? 'liuyao.timeline.ying-value',
+    tone: over.tone ?? 'neutral', label: over.label ?? '应爻值日', verdict: over.verdict ?? '待观察',
+    recordedAt: over.recordedAt ?? '2026-09-10T00:00:00.000Z', actualDate: over.actualDate,
+  });
+
+  it('到期未判不进入命中率分母，提前判定单列', () => {
+    const result = aggregateWindowStats([
+      row(),
+      row({ key: 'hit', date: '2026-09-02', verdict: '应验' }),
+      row({ key: 'miss', date: '2026-09-03', verdict: '未应验' }),
+      row({ key: 'early', date: '2026-09-20', verdict: '应验' }),
+    ], '2026-09-10');
+    const stat = result.byRule['liuyao.timeline.ying-value']!;
+    expect(stat).toMatchObject({ due: 3, judged: 2, hit: 1, early: 1 });
+    expect(result.insufficient).toContain('liuyao.timeline.ying-value');
+  });
+
+  it('实际日期偏差与应验判定分开统计', () => {
+    const result = aggregateWindowStats([
+      row({ key: 'a', verdict: '未应验', actualDate: '2026-09-03' }),
+      row({ key: 'b', caseId: 'c2', date: '2026-09-02', verdict: '应验', actualDate: '2026-09-01' }),
+    ], '2026-09-10', 2, 2);
+    expect(result.byRule['liuyao.timeline.ying-value']).toMatchObject({
+      judged: 2, hit: 1, dated: 2, inTolerance: 2, offsets: [-1, 2], medianOffset: 1, medianAbs: 2,
+    });
+  });
+
+  it('持久化窗口且不会覆盖已有判定', async () => {
+    const storage = memoryStorage();
+    const store = new LocalFollowupStore(storage);
+    const entries = [{ date: '2026-09-12', ganzhi: '己未', offsetDays: 7, label: '应爻值日', tone: 'neutral' as const, basis: ['应爻'], plain: '核对', ruleId: 'liuyao.timeline.ying-value' }];
+    expect(await store.seed('c1', 'liuyao', '失物', entries)).toBe(1);
+    const key = (await store.list('c1'))[0]!.key;
+    await store.setVerdict(key, '应验', { actualDate: '2026-09-13' });
+    expect(await store.seed('c1', 'liuyao', '失物', entries)).toBe(0);
+    const reloaded = new LocalFollowupStore(storage);
+    expect((await reloaded.list('c1'))[0]).toMatchObject({ verdict: '应验', actualDate: '2026-09-13' });
   });
 });

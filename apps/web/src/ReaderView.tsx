@@ -1,9 +1,9 @@
 /**
- * 典籍阅读器（轻量版）：基于内置语料的书架 → 章节 → 分段阅读 + 关键词过滤。
- * 数据来自启动时已预导入的 builtinCorpus（books 分组的 CorpusSection[]）。
+ * 典籍书阁：书目 → 章节 → 分段阅读，并提供字形无关搜索、阅读进度与本地批注。
+ * 展示文字始终保留语料原貌；搜索归一化只作用于匹配过程。
  */
-import { useMemo, useState } from 'react';
-import { includesNormalizedText, type CorpusSection } from '@xuanshu/knowledge';
+import { useEffect, useMemo, useState } from 'react';
+import { includesNormalizedText, normalizeSearchText, type CorpusSection } from '@xuanshu/knowledge';
 
 interface ReaderViewProps {
   corpus: CorpusSection[];
@@ -12,8 +12,17 @@ interface ReaderViewProps {
   initialQuery?: string;
 }
 
-/** 文本版本：扫描文（OCR 原样）／真实校准文字（定本）／注释文／白话文 */
 type TextMode = 'scan' | 'calib' | 'notes' | 'plain';
+
+interface ReaderBook {
+  book: string;
+  count: number;
+  canonicalIds: string[];
+  chapters: Array<{ chapter: string; segs: CorpusSection[] }>;
+  author?: string;
+  edition?: string;
+  license?: CorpusSection['license'];
+}
 
 const TEXT_MODES: Array<{ id: TextMode; label: string; hint: string }> = [
   { id: 'scan', label: '扫描文', hint: 'OCR 直出 · 未经校对' },
@@ -22,35 +31,77 @@ const TEXT_MODES: Array<{ id: TextMode; label: string; hint: string }> = [
   { id: 'plain', label: '白话文', hint: '现代白话翻译' },
 ];
 
-/** 取某段在指定版本下的正文；未收录时回退校准原文并标记回退 */
-function versionedText(s: CorpusSection, mode: TextMode): { body: string; fallback: boolean } {
+const PROGRESS_KEY = 'xuanshu.reader.progress.v1';
+const NOTES_KEY = 'xuanshu.reader.notes.v1';
+const FONT_SIZE_KEY = 'xuanshu.reader.font-size.v1';
+
+function readRecord(key: string): Record<string, string> {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) ?? '{}');
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeRecord(key: string, value: Record<string, string>): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // 存储不可用时仍保持当前会话可读，不中断书阁。
+  }
+}
+
+function readFontSize(): number {
+  try {
+    const value = Number(localStorage.getItem(FONT_SIZE_KEY));
+    return Number.isFinite(value) && value >= 14 && value <= 22 ? value : 16;
+  } catch {
+    return 16;
+  }
+}
+
+function versionedText(section: CorpusSection, mode: TextMode): { body: string; fallback: boolean } {
   switch (mode) {
-    case 'scan': return s.scanText != null ? { body: s.scanText, fallback: false } : { body: s.text, fallback: true };
-    case 'calib': return { body: s.text, fallback: false };
-    case 'notes': return s.notes != null ? { body: s.notes, fallback: false } : { body: s.text, fallback: true };
-    case 'plain': return s.plain != null ? { body: s.plain, fallback: false } : { body: s.text, fallback: true };
+    case 'scan': return section.scanText != null ? { body: section.scanText, fallback: false } : { body: section.text, fallback: true };
+    case 'calib': return { body: section.text, fallback: false };
+    case 'notes': return section.notes != null ? { body: section.notes, fallback: false } : { body: section.text, fallback: true };
+    case 'plain': return section.plain != null ? { body: section.plain, fallback: false } : { body: section.text, fallback: true };
   }
 }
 
 export function ReaderView({ corpus, initialCanonicalId, initialBook, initialQuery = '' }: ReaderViewProps) {
-  const books = useMemo(() => {
-    const m = new Map<string, { chapters: Map<string, CorpusSection[]>; count: number; canonicalIds: Set<string> }>();
-    for (const c of corpus) {
-      const book = c.book ?? '未名';
-      const b = m.get(book) ?? { chapters: new Map(), count: 0, canonicalIds: new Set<string>() };
-      b.count += 1;
-      if (c.canonicalId) b.canonicalIds.add(c.canonicalId);
-      const ch = c.chapter ?? '全卷';
-      const list = b.chapters.get(ch) ?? [];
-      list.push(c);
-      b.chapters.set(ch, list);
-      m.set(book, b);
+  const books = useMemo<ReaderBook[]>(() => {
+    const grouped = new Map<string, {
+      chapters: Map<string, CorpusSection[]>;
+      count: number;
+      canonicalIds: Set<string>;
+      first: CorpusSection;
+    }>();
+    for (const section of corpus) {
+      const bookName = section.book ?? '未名';
+      const current = grouped.get(bookName) ?? {
+        chapters: new Map<string, CorpusSection[]>(),
+        count: 0,
+        canonicalIds: new Set<string>(),
+        first: section,
+      };
+      current.count += 1;
+      if (section.canonicalId) current.canonicalIds.add(section.canonicalId);
+      const chapterName = section.chapter ?? '全卷';
+      const chapterSections = current.chapters.get(chapterName) ?? [];
+      chapterSections.push(section);
+      current.chapters.set(chapterName, chapterSections);
+      grouped.set(bookName, current);
     }
-    return [...m.entries()].map(([book, b]) => ({
+    return [...grouped.entries()].map(([book, value]) => ({
       book,
-      count: b.count,
-      canonicalIds: [...b.canonicalIds],
-      chapters: [...b.chapters.entries()].map(([chapter, segs]) => ({ chapter, segs })),
+      count: value.count,
+      canonicalIds: [...value.canonicalIds],
+      chapters: [...value.chapters.entries()].map(([chapter, segs]) => ({ chapter, segs })),
+      author: value.first.author,
+      edition: value.first.edition,
+      license: value.first.license,
     }));
   }, [corpus]);
 
@@ -59,95 +110,239 @@ export function ReaderView({ corpus, initialCanonicalId, initialBook, initialQue
       id === initialCanonicalId || id.startsWith(`${initialCanonicalId}.`) || initialCanonicalId.startsWith(`${id}.`)
     ))) || (initialBook && (candidate.book === initialBook || candidate.book.includes(initialBook)))
   ));
-  const [bookName, setBookName] = useState<string>(requestedBook?.book ?? books[0]?.book ?? '');
-  const [chapterName, setChapterName] = useState<string>('');
+  const [bookName, setBookName] = useState(requestedBook?.book ?? books[0]?.book ?? '');
+  const [chapterName, setChapterName] = useState('');
   const [filter, setFilter] = useState(initialQuery);
-  const [showAllBooks, setShowAllBooks] = useState(Boolean(initialQuery));
+  const [bookFilter, setBookFilter] = useState('');
+  const [showAllBook, setShowAllBook] = useState(Boolean(initialQuery));
+  const [showShelf, setShowShelf] = useState(!requestedBook);
   const [mode, setMode] = useState<TextMode>('calib');
+  const [fontSize, setFontSize] = useState(readFontSize);
+  const [progress, setProgress] = useState<Record<string, string>>(() => readRecord(PROGRESS_KEY));
+  const [annotations, setAnnotations] = useState<Record<string, string>>(() => readRecord(NOTES_KEY));
+  const [openAnnotation, setOpenAnnotation] = useState<string | null>(null);
+  const [resumeSegment, setResumeSegment] = useState<string | null>(null);
+  const [status, setStatus] = useState('');
 
-  const book = books.find((b) => b.book === bookName) ?? books[0];
-  const chapter = showAllBooks
+  const book = books.find((candidate) => candidate.book === bookName) ?? books[0];
+  const chapter = showAllBook
     ? null
-    : (book?.chapters.find((c) => c.chapter === chapterName) ?? book?.chapters[0] ?? null);
-
-  const segs = useMemo(() => {
-    const pool = chapter ? chapter.segs : (book?.chapters.flatMap((c) => c.segs) ?? []);
-    const q = filter.trim();
-    if (!q) return pool;
-    return pool.filter((s) => includesNormalizedText(s.text, q));
-  }, [chapter, book, filter]);
-
+    : (book?.chapters.find((candidate) => candidate.chapter === chapterName) ?? book?.chapters[0] ?? null);
+  const segments = useMemo(() => {
+    const pool = chapter ? chapter.segs : (book?.chapters.flatMap((candidate) => candidate.segs) ?? []);
+    const query = filter.trim();
+    return query ? pool.filter((section) => includesNormalizedText(section.text, query)) : pool;
+  }, [book, chapter, filter]);
+  const shelfBooks = useMemo(() => {
+    const query = normalizeSearchText(bookFilter.trim());
+    if (!query) return books;
+    return books.filter((candidate) => normalizeSearchText([
+      candidate.book,
+      candidate.author,
+      candidate.edition,
+      ...candidate.chapters.map((item) => item.chapter),
+    ].filter(Boolean).join(' ')).includes(query));
+  }, [bookFilter, books]);
   const modeCount = useMemo(() => {
-    const pool = chapter ? chapter.segs : (book?.chapters.flatMap((c) => c.segs) ?? []);
-    const n = pool.length;
+    const pool = chapter ? chapter.segs : (book?.chapters.flatMap((candidate) => candidate.segs) ?? []);
     return {
-      scan: pool.filter((s) => s.scanText != null).length,
-      calib: n,
-      notes: pool.filter((s) => s.notes != null).length,
-      plain: pool.filter((s) => s.plain != null).length,
+      scan: pool.filter((section) => section.scanText != null).length,
+      calib: pool.length,
+      notes: pool.filter((section) => section.notes != null).length,
+      plain: pool.filter((section) => section.plain != null).length,
     };
-  }, [chapter, book]);
+  }, [book, chapter]);
+
+  useEffect(() => {
+    if (!resumeSegment || showShelf) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(`reader-segment-${resumeSegment}`)?.scrollIntoView({ block: 'start' });
+      setResumeSegment(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [resumeSegment, showShelf, segments]);
+
+  function openBook(nextBook: string, resume = false) {
+    setBookName(nextBook);
+    setChapterName('');
+    setFilter('');
+    setShowAllBook(resume);
+    setShowShelf(false);
+    setOpenAnnotation(null);
+    setStatus('');
+    if (resume && progress[nextBook]) setResumeSegment(progress[nextBook]);
+  }
+
+  function changeFontSize(delta: number) {
+    const next = Math.max(14, Math.min(22, fontSize + delta));
+    setFontSize(next);
+    try {
+      localStorage.setItem(FONT_SIZE_KEY, String(next));
+    } catch {
+      // 存储不可用时保留当前会话设置。
+    }
+  }
+
+  function saveProgress(section: CorpusSection) {
+    const next = { ...progress, [book?.book ?? bookName]: section.segId };
+    setProgress(next);
+    writeRecord(PROGRESS_KEY, next);
+    setStatus(`已记录阅读位置：${section.chapter ?? '全卷'} · ${section.segId}`);
+  }
+
+  function saveAnnotation(segId: string, value: string) {
+    const next = { ...annotations };
+    if (value.trim()) next[segId] = value;
+    else delete next[segId];
+    setAnnotations(next);
+    writeRecord(NOTES_KEY, next);
+  }
+
+  if (showShelf) {
+    return (
+      <section className="reader-shell" aria-labelledby="reader-shelf-title">
+        <div className="section-heading">
+          <div>
+            <h2 id="reader-shelf-title">典籍书阁</h2>
+            <p className="meta">{books.length} 部 · {corpus.length} 段原文</p>
+          </div>
+          <input
+            className="case-search"
+            value={bookFilter}
+            onChange={(event) => setBookFilter(event.target.value)}
+            placeholder="搜索书名、作者、版本或章节"
+            aria-label="搜索书目"
+          />
+        </div>
+        {shelfBooks.length === 0 ? (
+          <p className="meta reader-empty">没有匹配的书目。</p>
+        ) : (
+          <div className="reader-shelf-grid">
+            {shelfBooks.map((item) => (
+              <article key={item.book} className="reader-book-card">
+                <button className="reader-book-open" onClick={() => openBook(item.book)}>
+                  <span className="reader-book-title">《{item.book}》</span>
+                  <span>{item.author ?? '作者未详'}</span>
+                  <span>{item.chapters.length} 章 · {item.count} 段</span>
+                  <small>{item.edition ?? '版本未详'} · {item.license ?? '许可未标注'}</small>
+                </button>
+                {progress[item.book] && (
+                  <button className="secondary small" onClick={() => openBook(item.book, true)}>继续阅读</button>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
-    <section className="card">
-      <h2>典籍阅读（内置 {books.length} 部 · {corpus.length} 段原文）</h2>
-      <label className="check">
-        <input type="checkbox" checked={showAllBooks} onChange={(e) => setShowAllBooks(e.target.checked)} />
-        整书连读模式
-      </label>
-
-      <div className="chips">
-        {books.slice(0, 18).map((b) => (
-          <button
-            key={b.book}
-            className={`chip ${bookName === b.book ? 'active' : ''}`}
-            onClick={() => { setBookName(b.book); setChapterName(''); setShowAllBooks(false); }}
-          >{b.book}（{b.count}）</button>
-        ))}
-      </div>
-
-      {book && !showAllBooks && (
-        <div className="chips">
-          {book.chapters.slice(0, 60).map((c) => (
-            <button
-              key={c.chapter}
-              className={`chip ${chapterName === c.chapter ? 'active' : ''}`}
-              onClick={() => setChapterName(c.chapter)}
-            >{c.chapter}</button>
-          ))}
+    <section className="reader-shell" aria-labelledby="reader-title">
+      <div className="reader-head">
+        <div>
+          <button className="secondary small" onClick={() => setShowShelf(true)}>返回书阁</button>
+          <h2 id="reader-title">《{book?.book ?? ''}》</h2>
+          <p className="meta">
+            {book?.author ?? '作者未详'} · {book?.edition ?? '版本未详'} · {book?.license ?? '许可未标注'}
+          </p>
         </div>
-      )}
-
-      <div className="chips" style={{ marginTop: 6 }}>
-        {TEXT_MODES.map((m) => (
-          <button
-            key={m.id}
-            className={`chip ${mode === m.id ? 'active' : ''}`}
-            onClick={() => setMode(m.id)}
-            title={m.hint}
-          >{m.label}</button>
-        ))}
-        <span className="meta" style={{ marginLeft: 8, alignSelf: 'center' }}>
-          当前 {book?.book ?? ''}（{chapter?.chapter ?? '全书'}）：扫描文 {modeCount.scan} 段 · 注释文 {modeCount.notes} 段 · 白话文 {modeCount.plain} 段
-        </span>
+        <div className="reader-font-controls" role="group" aria-label="正文字号">
+          <button className="icon-button" onClick={() => changeFontSize(-1)} disabled={fontSize <= 14} title="减小字号" aria-label="减小字号">−</button>
+          <output aria-label="当前字号">{fontSize}px</output>
+          <button className="icon-button" onClick={() => changeFontSize(1)} disabled={fontSize >= 22} title="增大字号" aria-label="增大字号">+</button>
+        </div>
       </div>
-      <p className="hints">{TEXT_MODES.map((m) => `${m.label}=${m.hint}`).join('；')}；未收录的版本自动回退「真实校准文字」并标注。</p>
 
-      <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="在本书/本章中检索关键字（如：月破、旬空、用神；按校准文字命中）" className="question" />
+      <div className="reader-toolbar">
+        <label className="birth-field">
+          <span>章节</span>
+          <select
+            className="reader-chapter-select"
+            value={chapter?.chapter ?? ''}
+            disabled={showAllBook}
+            onChange={(event) => setChapterName(event.target.value)}
+          >
+            {book?.chapters.map((item) => (
+              <option key={item.chapter} value={item.chapter}>{item.chapter}（{item.segs.length}）</option>
+            ))}
+          </select>
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={showAllBook} onChange={(event) => setShowAllBook(event.target.checked)} />
+          整书检索
+        </label>
+      </div>
+
+      <div className="chips reader-modes" role="group" aria-label="阅读文本版本">
+        {TEXT_MODES.map((item) => (
+          <button
+            key={item.id}
+            className={`chip ${mode === item.id ? 'active' : ''}`}
+            aria-pressed={mode === item.id}
+            onClick={() => setMode(item.id)}
+            title={item.hint}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <p className="meta">
+        当前范围：扫描文 {modeCount.scan} 段 · 校准文 {modeCount.calib} 段 · 注释文 {modeCount.notes} 段 · 白话文 {modeCount.plain} 段
+      </p>
+
+      <input
+        value={filter}
+        onChange={(event) => setFilter(event.target.value)}
+        placeholder="检索正文，支持繁简字与异体字"
+        aria-label="检索正文"
+        className="question"
+      />
+      {status && <p className="ok" role="status">{status}</p>}
 
       <div className="reader-body">
-        {segs.length === 0 && <p className="meta">无匹配段落（可在「联网研读」补充检索）。</p>}
-        {segs.slice(0, 500).map((s) => {
-          const { body, fallback } = versionedText(s, mode);
+        {segments.length === 0 && <p className="meta">当前范围没有匹配段落。</p>}
+        {segments.slice(0, 500).map((section) => {
+          const { body, fallback } = versionedText(section, mode);
+          const isProgress = progress[book?.book ?? bookName] === section.segId;
           return (
-            <div key={s.segId} className="reader-seg">
-              {fallback && <p className="meta">〔该段暂未收录「{TEXT_MODES.find((m) => m.id === mode)?.label}」，以下为真实校准文字〕</p>}
-              <div className="reader-text">{body}</div>
-              <div className="reader-meta">〔{s.book}{s.chapter ? `·${s.chapter}` : ''} · {s.segId} · {TEXT_MODES.find((m) => m.id === mode)?.label}〕</div>
-            </div>
+            <article
+              key={section.segId}
+              id={`reader-segment-${section.segId}`}
+              className={`reader-seg ${isProgress ? 'reader-current' : ''}`}
+            >
+              {fallback && <p className="meta">该段暂未收录“{TEXT_MODES.find((item) => item.id === mode)?.label}”，以下显示校准文字。</p>}
+              <div className="reader-text" style={{ fontSize }}>{body}</div>
+              <div className="reader-meta">
+                {section.chapter ?? '全卷'} · {section.segId} · {TEXT_MODES.find((item) => item.id === mode)?.label}
+              </div>
+              <div className="reader-seg-actions">
+                <button className="secondary small" onClick={() => saveProgress(section)}>
+                  {isProgress ? '当前阅读位置' : '标记阅读位置'}
+                </button>
+                <button
+                  className="secondary small"
+                  aria-expanded={openAnnotation === section.segId}
+                  onClick={() => setOpenAnnotation(openAnnotation === section.segId ? null : section.segId)}
+                >
+                  {annotations[section.segId] ? '编辑批注' : '添加批注'}
+                </button>
+              </div>
+              {openAnnotation === section.segId && (
+                <label className="reader-note">
+                  <span>本地批注</span>
+                  <textarea
+                    value={annotations[section.segId] ?? ''}
+                    onChange={(event) => saveAnnotation(section.segId, event.target.value)}
+                    placeholder="记录校勘、理解或案例关联"
+                    rows={3}
+                  />
+                </label>
+              )}
+            </article>
           );
         })}
-        {segs.length > 500 && <p className="meta">…仅显示前 500 段，请缩小检索范围。</p>}
+        {segments.length > 500 && <p className="meta">仅显示前 500 段，请缩小检索范围。</p>}
       </div>
     </section>
   );

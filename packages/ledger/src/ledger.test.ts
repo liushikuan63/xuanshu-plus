@@ -4,7 +4,7 @@ import { MemoryCaseStore, makeCaseRecord } from './store.js';
 import { LocalCaseStore, memoryStorage } from './localstore.js';
 import { applyOutcome, calibrate } from './feedback.js';
 import { exportCsv, exportJson, exportMarkdown, isIncomingCaseNewer, parseCaseImport } from './io.js';
-import { LocalFollowupStore, aggregateWindowStats, type WindowFollowup } from './timing.js';
+import { LocalFollowupStore, aggregateWindowStats, localDateIso, type WindowFollowup } from './timing.js';
 import type { CaseRecord } from './schema.js';
 
 function sampleCase(over: Partial<CaseRecord> = {}): CaseRecord {
@@ -230,6 +230,10 @@ describe('应期窗口回收', () => {
     const stat = result.byRule['liuyao.timeline.ying-value']!;
     expect(stat).toMatchObject({ due: 3, judged: 2, hit: 1, early: 1 });
     expect(result.insufficient).toContain('liuyao.timeline.ying-value');
+  });
+
+  it('本地日期不经 UTC 截断', () => {
+    expect(localDateIso(new Date(2026, 8, 5, 0, 30))).toBe('2026-09-05');
   });
 
   it('实际日期偏差与应验判定分开统计', () => {

@@ -7,6 +7,7 @@
     "paths": {
       "@xuanshu/ai": ["../../packages/ai/src/index.ts"],
       "@xuanshu/core": ["../../packages/core/src/index.ts"],
+      "@xuanshu/core/*": ["../../packages/core/src/*"],
       "@xuanshu/intake": ["../../packages/intake/src/index.ts"],
       "@xuanshu/knowledge": ["../../packages/knowledge/src/index.ts"],
       "@xuanshu/knowledge/*": ["../../packages/knowledge/src/*"],

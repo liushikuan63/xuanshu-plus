@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { ArtType, CategoryId, RuleHit, ShuPlugin } from '@xuanshu/core';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import type { ArtType, CategoryId, RuleHit, ShuPlugin, Timeline } from '@xuanshu/core';
 import {
   castLiuyao,
   castMeihua,
@@ -11,11 +11,11 @@ import {
   castJinKou,
   liuyaoPlugin, meihuaPlugin, baziPlugin, ziweiPlugin, xiaoliurenPlugin, qimenPlugin, liurenPlugin, jinkouPlugin,
   registerPlugin, getPlugin, hasPlugin,
-  chartRules, artLabel, yongShenRules,
+  chartRules, artLabel, yongShenRules, timelineForChart,
   type BoardSpec, type LiuyaoChart, type MeihuaChart, type BaziChart, type ZiweiChart, type XiaoliurenChart, type QimenChart, type LiuRenChart, type JinKouChart,
 } from '@xuanshu/core';
 import { IntakeWizard, playbookFor, TAXONOMY, categories, checkQuality } from '@xuanshu/intake';
-import { LocalCaseStore, makeCaseRecord, quotaStatus, exportJson, exportCsv, exportMarkdown, parseCaseImport, isIncomingCaseNewer, applyOutcome, calibrate, type OutcomeResult } from '@xuanshu/ledger';
+import { LocalCaseStore, LocalFollowupStore, makeCaseRecord, quotaStatus, exportJson, exportCsv, exportMarkdown, parseCaseImport, isIncomingCaseNewer, applyOutcome, calibrate, type OutcomeResult, type WindowFollowup, type WindowVerdict } from '@xuanshu/ledger';
 import { DISCLAIMER, timingCandidatesOf } from '@xuanshu/answer';
 import type { TimingCandidate } from '@xuanshu/core';
 import { Retriever, enrichRuleCitations, type CorpusSection } from '@xuanshu/knowledge/retriever';
@@ -23,6 +23,10 @@ import { AI_PROVIDERS, providerById, chatCompletions, buildMessages, parseJudgme
 import { plainRuleText, plainSummary, baziLifeTrends, baziCurrentYearNote } from '@xuanshu/core';
 import { desktopBridge, isDesktop } from './desktopBridge';
 import { ReaderView } from './ReaderView';
+import { TimelineView } from './TimelineView';
+import { FollowupPanel } from './FollowupPanel';
+
+const AlmanacView = lazy(async () => ({ default: (await import('./AlmanacView')).AlmanacView }));
 
 for (const plugin of [liuyaoPlugin, meihuaPlugin, baziPlugin, ziweiPlugin, xiaoliurenPlugin, qimenPlugin, liurenPlugin, jinkouPlugin]) {
   if (!hasPlugin(plugin.id)) registerPlugin(plugin);
@@ -63,6 +67,7 @@ const OUTCOME_OPTIONS: OutcomeResult[] = ['应验', '部分应验', '未应验',
 type AnyChart = LiuyaoChart | MeihuaChart | XiaoliurenChart | BaziChart | ZiweiChart | QimenChart | LiuRenChart | JinKouChart;
 
 const store = new LocalCaseStore();
+const followupStore = new LocalFollowupStore();
 function ctxAt(date: Date) {
   return { now: date, random: Math.random, tzOffsetHours: 8 };
 }
@@ -76,18 +81,20 @@ export function App() {
   const [chart, setChart] = useState<AnyChart | null>(null);
   const [rules, setRules] = useState<RuleHit[]>([]);
   const [timing, setTiming] = useState<TimingCandidate[]>([]);
+  const [timeline, setTimeline] = useState<Timeline | null>(null);
   const [board, setBoard] = useState<BoardSpec | null>(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState('');
   const [cases, setCases] = useState<Awaited<ReturnType<typeof store.list>>>([]);
   const [stats, setStats] = useState<Awaited<ReturnType<typeof store.stats>> | null>(null);
+  const [followups, setFollowups] = useState<WindowFollowup[]>([]);
   const [outcomeNotes, setOutcomeNotes] = useState<Record<string, string>>({});
   const [kb, setKb] = useState<Retriever>(fallbackKb);
   const [kbFromCache, setKbFromCache] = useState(false);
   const [kbLoading, setKbLoading] = useState(true);
   const [kbError, setKbError] = useState('');
   const [readerCorpus, setReaderCorpus] = useState<CorpusSection[]>([]);
-  const [mode, setMode] = useState<'cast' | 'reader'>('cast');
+  const [mode, setMode] = useState<'cast' | 'reader' | 'almanac'>('cast');
 
   // 异步从 IndexedDB 恢复知识库快照（命中缓存免重建 BM25 索引；语料版本变化自动重建）
   useEffect(() => {
@@ -146,6 +153,9 @@ export function App() {
     });
     store.stats().then((s) => {
       if (alive) setStats(s);
+    });
+    followupStore.list().then((list) => {
+      if (alive) setFollowups(list);
     });
     return () => { alive = false; };
   }, []);
@@ -206,6 +216,16 @@ export function App() {
   function refreshData() {
     store.list().then(setCases);
     store.stats().then(setStats);
+    followupStore.list().then(setFollowups);
+  }
+
+  async function markWindowVerdict(key: string, verdict: WindowVerdict) {
+    try {
+      await followupStore.setVerdict(key, verdict);
+      refreshData();
+    } catch (e) {
+      alert(`应期回标保存失败：${(e as Error).message}`);
+    }
   }
 
   /** 事后回标应验：写入标注后持久化并刷新复盘统计 */
@@ -230,6 +250,7 @@ export function App() {
     setChart(null);
     setRules([]);
     setTiming([]);
+    setTimeline(null);
     setBoard(null);
     setAiResult(null);
   }
@@ -285,6 +306,7 @@ export function App() {
       const r = art === 'liuyao' ? [...(await chartRules(c as LiuyaoChart)), ...yongShenRules(c as LiuyaoChart)] : await plugin.rules(c, {});
       setRules(enrichRuleCitations(r, kb));
       setTiming(timingCandidatesOf(art, JSON.parse(JSON.stringify(c)) as Record<string, unknown>, r));
+      setTimeline(timelineForChart(art, c));
       setBoard(plugin.board(c, {}));
     } catch (e) {
       alert(`起卦失败：${(e as Error).message}`);
@@ -321,11 +343,14 @@ export function App() {
       }
       const duplicate = await store.findDuplicate({ configHash: rec.input.configHash, summary: rec.question.summary, createdAt: rec.createdAt });
       if (duplicate) {
-        setSaved(`未重复存档：相同盘面与问句已存在（#${duplicate.caseId}）`);
+        const seeded = timeline ? await followupStore.seed(duplicate.caseId, art, category, timeline.entries) : 0;
+        setSaved(`未重复存档：相同盘面与问句已存在（#${duplicate.caseId}）${seeded ? `，已补充 ${seeded} 个应期窗口` : ''}`);
+        refreshData();
         return;
       }
       await store.add(rec);
-      setSaved(`已存档 #${rec.caseId}（${chartTitle() ?? ''}）`);
+      const seeded = timeline ? await followupStore.seed(rec.caseId, art, category, timeline.entries) : 0;
+      setSaved(`已存档 #${rec.caseId}（${chartTitle() ?? ''}）${seeded ? `，已建立 ${seeded} 个应期窗口` : ''}`);
       refreshData();
     } catch (e) {
       alert(`案例保存失败：${(e as Error).message}`);
@@ -498,6 +523,7 @@ export function App() {
         <p>排盘确定性 · 解释开放性 · 路径可学习（六爻 / 梅花 / 小六壬 / 奇门 / 大六壬 / 金口诀 / 八字 / 紫微）</p>
         <div className="chips">
           <button className={`chip ${mode === 'cast' ? 'active' : ''}`} onClick={() => setMode('cast')}>占卜工作台</button>
+          <button className={`chip ${mode === 'almanac' ? 'active' : ''}`} onClick={() => setMode('almanac')}>万年历</button>
           <button className={`chip ${mode === 'reader' ? 'active' : ''}`} onClick={() => setMode('reader')}>典籍阅读</button>
         </div>
       </header>
@@ -507,6 +533,10 @@ export function App() {
           kbLoading
             ? <section className="card"><p className="meta">典籍载入中…</p></section>
             : <ReaderView corpus={readerCorpus} />
+        ) : mode === 'almanac' ? (
+          <Suspense fallback={<section className="card"><p className="meta">万年历载入中…</p></section>}>
+            <AlmanacView />
+          </Suspense>
         ) : (<>
         <section className="card">
           <h2>选择术数</h2>
@@ -656,6 +686,8 @@ export function App() {
           </section>
         )}
 
+        {timeline && <TimelineView timeline={timeline} />}
+
         <section className="card">
           <h2>联网研读（可选 · 结果仅供资料参考，需自行核实）</h2>
           <details>
@@ -767,6 +799,8 @@ export function App() {
             )}
           </section>
         )}
+
+        <FollowupPanel rows={followups} onVerdict={(key, verdict) => void markWindowVerdict(key, verdict)} />
 
         <section className="card">
           <h2>个人复盘与校准（仅校准你的解释习惯，永不回写排盘）</h2>

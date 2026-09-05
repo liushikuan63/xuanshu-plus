@@ -34,6 +34,10 @@ export interface WindowRuleStat {
 
 export const FOLLOWUPS_KEY = 'xuanshu.followups.v1';
 
+export function localDateIso(date = new Date()): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function dayDiff(expected: string, actual: string): number {
   const a = Date.parse(`${expected}T00:00:00Z`);
   const b = Date.parse(`${actual}T00:00:00Z`);
@@ -165,12 +169,12 @@ export class LocalFollowupStore {
       actualDate: extra.actualDate ?? current.actualDate,
       note: extra.note ?? current.note,
       recordedAt: new Date().toISOString(),
-      judgedAt: settled ? new Date().toISOString().slice(0, 10) : current.judgedAt,
+      judgedAt: settled ? localDateIso() : current.judgedAt,
     });
     this.commit(next);
   }
 
-  async stats(today = new Date().toISOString().slice(0, 10), minSample = 10): Promise<ReturnType<typeof aggregateWindowStats>> {
+  async stats(today = localDateIso(), minSample = 10): Promise<ReturnType<typeof aggregateWindowStats>> {
     return aggregateWindowStats(await this.list(), today, minSample);
   }
 }

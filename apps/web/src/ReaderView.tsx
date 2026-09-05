@@ -3,7 +3,8 @@
  * 展示文字始终保留语料原貌；搜索归一化只作用于匹配过程。
  */
 import { useEffect, useMemo, useState } from 'react';
-import { includesNormalizedText, normalizeSearchText, type CorpusSection } from '@xuanshu/knowledge';
+import { includesNormalizedText, normalizeSearchText } from '@xuanshu/knowledge/normalize';
+import type { CorpusSection } from '@xuanshu/knowledge/retriever';
 
 interface ReaderViewProps {
   corpus: CorpusSection[];

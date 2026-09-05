@@ -14,7 +14,7 @@
  */
 
 import type { EngineCtx, NormalizedMoment, RawInput } from '../../types.js';
-import { dateToJd } from '../../astronomy/jde.js';
+import { civilJdn, dateToJd } from '../../astronomy/jde.js';
 import {
   DIZHI, ZHI_LIUHE, ZHI_SANHE, zhiChong, ZHI_WUXING, GAN_WUXING, WUXING_SHENG, WUXING_KE,
   dayGanZhiFromJdn, ganZhiFromIndex, hourGanZhi, monthGanZhi,
@@ -313,7 +313,7 @@ export async function normalizeLiuRen(input: RawInput, ctx: EngineCtx, tzOffsetH
     ? { year: input.time.year, month: input.time.month, day: input.time.day, hour: input.time.hour, minute: input.time.minute ?? 0, second: input.time.second ?? 0, tzOffsetHours: input.time.tzOffsetHours ?? tzOffsetHours }
     : { year: ctx.now.getFullYear(), month: ctx.now.getMonth() + 1, day: ctx.now.getDate(), hour: ctx.now.getHours(), minute: ctx.now.getMinutes(), second: ctx.now.getSeconds(), tzOffsetHours };
   const jd = dateToJd(t.year, t.month, t.day, t.hour + t.minute / 60 + t.second / 3600) - t.tzOffsetHours / 24;
-  const jdn = Math.floor(jd + 0.5);
+  const jdn = civilJdn(t.year, t.month, t.day);
   return {
     year: t.year, month: t.month, day: t.day, hour: t.hour, minute: t.minute, second: t.second,
     jd, jdn, tzOffsetHours: t.tzOffsetHours,

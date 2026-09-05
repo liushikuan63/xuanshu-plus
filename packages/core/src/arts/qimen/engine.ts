@@ -14,7 +14,7 @@
  */
 
 import type { EngineCtx, NormalizedMoment, RawInput } from '../../types.js';
-import { dateToJd, deltaT } from '../../astronomy/jde.js';
+import { civilJdn, dateToJd, deltaT } from '../../astronomy/jde.js';
 import { dayGanZhiFromJdn, ganZhiFromIndex, hourGanZhi, monthGanZhi, DIZHI, type Gan, type WuXing, type Zhi } from '../../calendar/ganzhi.js';
 import { solarTermsOfYear, type SolarTermName } from '../../calendar/solarTerms.js';
 import { monthPillarInfo } from '../../calendar/monthPillar.js';
@@ -449,7 +449,7 @@ export async function normalizeQimen(input: RawInput, ctx: EngineCtx, tzOffsetHo
     ? { year: input.time.year, month: input.time.month, day: input.time.day, hour: input.time.hour, minute: input.time.minute ?? 0, second: input.time.second ?? 0, tzOffsetHours: input.time.tzOffsetHours ?? tzOffsetHours }
     : { year: ctx.now.getFullYear(), month: ctx.now.getMonth() + 1, day: ctx.now.getDate(), hour: ctx.now.getHours(), minute: ctx.now.getMinutes(), second: ctx.now.getSeconds(), tzOffsetHours };
   const jd = dateToJd(t.year, t.month, t.day, t.hour + t.minute / 60 + t.second / 3600) - t.tzOffsetHours / 24;
-  const jdn = Math.floor(jd + 0.5);
+  const jdn = civilJdn(t.year, t.month, t.day);
   return {
     year: t.year, month: t.month, day: t.day, hour: t.hour, minute: t.minute, second: t.second,
     jd, jdn, tzOffsetHours: t.tzOffsetHours,

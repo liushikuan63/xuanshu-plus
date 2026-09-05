@@ -4,7 +4,7 @@
  */
 
 import type { EngineCtx, NormalizedMoment, RawInput } from '../../types.js';
-import { dateToJd } from '../../astronomy/jde.js';
+import { civilJdn, dateToJd } from '../../astronomy/jde.js';
 import { dayGanZhiFromJdn } from '../../calendar/ganzhi.js';
 import { configHashOf } from '../../plugins/registry.js';
 import { xunKongOf } from '../liuyao/trigrams.js';
@@ -99,7 +99,7 @@ export async function castZiwei(
   }));
 
   const jd = dateToJd(input.year, input.month, input.day, input.hour + (input.minute ?? 0) / 60) - tzOffsetHours / 24;
-  const jdn = Math.floor(jd + 0.5);
+  const jdn = civilJdn(input.year, input.month, input.day);
   const normalized: NormalizedMoment = {
     year: input.year, month: input.month, day: input.day, hour: input.hour, minute: input.minute ?? 0, second: 0,
     jd, jdn, tzOffsetHours,
@@ -136,7 +136,7 @@ export async function normalizeZiwei(input: RawInput, ctx: EngineCtx, tzOffsetHo
     ? { year: input.time.year, month: input.time.month, day: input.time.day, hour: input.time.hour, minute: input.time.minute ?? 0, second: input.time.second ?? 0, tzOffsetHours: input.time.tzOffsetHours ?? tzOffsetHours }
     : { year: ctx.now.getFullYear(), month: ctx.now.getMonth() + 1, day: ctx.now.getDate(), hour: ctx.now.getHours(), minute: ctx.now.getMinutes(), second: ctx.now.getSeconds(), tzOffsetHours };
   const jd = dateToJd(t.year, t.month, t.day, t.hour + t.minute / 60 + t.second / 3600) - t.tzOffsetHours / 24;
-  const jdn = Math.floor(jd + 0.5);
+  const jdn = civilJdn(t.year, t.month, t.day);
   return {
     year: t.year, month: t.month, day: t.day, hour: t.hour, minute: t.minute, second: t.second,
     jd, jdn, tzOffsetHours: t.tzOffsetHours,

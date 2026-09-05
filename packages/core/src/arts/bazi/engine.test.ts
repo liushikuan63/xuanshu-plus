@@ -33,6 +33,11 @@ describe('八字四柱黄金样本', () => {
     const chart = await buildBazi({ year: 2024, month: 2, day: 10, hour: 23, minute: 30, gender: 'male' });
     expect(chart.day.gan + chart.day.zhi).toBe('乙巳');
   });
+
+  it('东八区清晨不因 UTC 换算误落前一日', async () => {
+    const chart = await buildBazi({ year: 2024, month: 2, day: 10, hour: 1, minute: 30, gender: 'male' });
+    expect(chart.day.gan + chart.day.zhi).toBe('甲辰');
+  });
 });
 
 describe('藏干与十神', () => {

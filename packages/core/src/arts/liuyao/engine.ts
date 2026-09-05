@@ -4,7 +4,7 @@
  */
 
 import type { EngineCtx, NormalizedMoment, RawInput } from '../../types.js';
-import { dateToJd } from '../../astronomy/jde.js';
+import { civilJdn, dateToJd } from '../../astronomy/jde.js';
 import { dayGanZhiFromJdn, ganZhiFromIndex, monthGanZhi, type Gan, type GanZhi, type Zhi } from '../../calendar/ganzhi.js';
 import { monthPillarInfo } from '../../calendar/monthPillar.js';
 import { configHashOf } from '../../plugins/registry.js';
@@ -96,7 +96,7 @@ function momentOfInput(input: RawInput, ctx: EngineCtx, tzOffsetHours: number): 
       })();
   const { year, month, day, hour, minute, second } = t;
   const jd = dateToJd(year, month, day, hour + minute / 60 + second / 3600) - t.tzOffsetHours / 24;
-  const jdn = Math.floor(jd + 0.5);
+  const jdn = civilJdn(year, month, day);
   return {
     year, month, day, hour, minute, second,
     jd, jdn,

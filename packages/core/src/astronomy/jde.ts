@@ -23,6 +23,14 @@ export function dateToJd(year: number, month: number, day: number, hour = 0): nu
   );
 }
 
+/**
+ * 本地公历日期对应的儒略日数。
+ * 日柱按用户输入的民用日期换日，不能先转成 UTC 再截日，否则正时区清晨会落到前一天。
+ */
+export function civilJdn(year: number, month: number, day: number): number {
+  return Math.floor(dateToJd(year, month, day) + 0.5);
+}
+
 /** JS Date（视为 UTC）→ JD */
 export function dateToJdFromJsDate(d: Date): number {
   return dateToJd(

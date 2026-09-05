@@ -3,7 +3,7 @@
  */
 
 import type { EngineCtx, NormalizedMoment, RawInput } from '../../types.js';
-import { dateToJd } from '../../astronomy/jde.js';
+import { civilJdn, dateToJd } from '../../astronomy/jde.js';
 import {
   DIZHI,
   GAN_WUXING,
@@ -216,7 +216,7 @@ export async function buildBazi(
 ): Promise<BaziChart> {
   const { year, month, day, hour, minute = 0, second = 0, gender } = input;
   const jd = dateToJd(year, month, day, hour + minute / 60 + second / 3600) - tzOffsetHours / 24;
-  const jdn = Math.floor(jd + 0.5);
+  const jdn = civilJdn(year, month, day);
 
   // 年柱（立春换年）
   let yearPillar: GanZhi;
@@ -327,7 +327,7 @@ export async function normalizeBazi(input: RawInput, ctx: EngineCtx, tzOffsetHou
     ? { year: input.time.year, month: input.time.month, day: input.time.day, hour: input.time.hour, minute: input.time.minute ?? 0, second: input.time.second ?? 0 }
     : makeBaziInput(ctx);
   const jd = dateToJd(t.year, t.month, t.day, t.hour + t.minute / 60 + t.second / 3600) - tzOffsetHours / 24;
-  const jdn = Math.floor(jd + 0.5);
+  const jdn = civilJdn(t.year, t.month, t.day);
   return {
     year: t.year, month: t.month, day: t.day, hour: t.hour, minute: t.minute, second: t.second,
     jd, jdn, tzOffsetHours,

@@ -23,13 +23,13 @@ flowchart TD
 | 路径 | 职责 | 约束 |
 |---|---|---|
 | `packages/core` | 天文、历法、万年历、八种术数引擎、日期时间线、平台能力矩阵、插件契约与通用盘面 | 纯 TypeScript；排盘结果应确定、可复现 |
-| `packages/intake` | 事项分类、问句质量、六步向导、playbook | 只组织输入和解释路径，不改变排盘算法 |
-| `packages/knowledge` | CJK BM25、内置语料、IndexedDB 快照、引用补全 | 缓存必须随正文/元数据变化失效 |
-| `packages/reader` | 典籍目录、引用模型、字符区间定位 | 负责定位，不负责排盘 |
+| `packages/intake` | 事项分类、问句质量、六步向导、12 张完整 playbook | 只组织输入和解释路径，不改变排盘算法 |
+| `packages/knowledge` | 繁简/异体归一化、CJK BM25、内置语料、IndexedDB 快照、引用补全 | 展示保留原文；归一化只用于匹配；缓存必须随正文/元数据变化失效 |
+| `packages/reader` | 典籍目录、引用模型、字符区间定位 | 负责定位，不负责排盘或浏览器状态 |
 | `packages/ledger` | 案例模型、配额、持久化、应期回标统计、导入导出 | 用户数据本地优先；外部导入必须运行时校验 |
 | `packages/answer` | 答复模板、应期候选和敏感事项安全口径 | 不得给出医疗、法律、财务的确定性承诺 |
 | `packages/ai` | Provider 配置、提示契约、网络客户端和响应解析 | AI 不算盘；所有输出标为 E 级并需人工核实 |
-| `apps/web` | React 工作台和典籍阅读界面 | 同一套 UI 服务浏览器、Electron 和 Android |
+| `apps/web` | React 工作台、路径卡、案例中心和典籍书阁 | 同一套 UI 服务浏览器、Electron 和 Android；阅读位置、字号和批注保存在本地 |
 | `apps/desktop` | Electron 窗口、DPAPI 密钥、AI/搜索 IPC 代理 | 外部页面不得导航进主窗口或调用受信 IPC |
 
 ## 排盘数据流
@@ -64,6 +64,8 @@ flowchart TD
 4. 命中时直接恢复索引；未命中或损坏时才重建 BM25 并回写。
 
 这样避免把约 4.93 MB 的原典代码塞入首屏业务包，也避免二次启动仍重复分词建索引。
+
+阅读器只从 `@xuanshu/knowledge/normalize` 和 `@xuanshu/knowledge/retriever` 子路径导入轻量能力。不要从知识库总入口静态导入，否则 `builtin` 语料会被打回主包，破坏按需加载边界。
 
 ## 依赖方向
 

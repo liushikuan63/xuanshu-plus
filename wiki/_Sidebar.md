@@ -2,6 +2,7 @@
 
 - [首页](Home.md)
 - [系统架构](Architecture.md)
+- [功能矩阵](Feature-Matrix.md)
 - [开发指南](Development.md)
 - [响应式设计](Responsive-Design.md)
 - [数据与安全](Data-and-Security.md)

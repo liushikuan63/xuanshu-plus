@@ -28,12 +28,13 @@
 | 高 | 正时区清晨先换算 UTC 再截日，九个排盘入口可能误用前一日日柱 | 新增 `civilJdn`，按输入的本地公历日期统一换日并增加跨引擎回归 |
 | 中 | Web/Android 提示 Key 仅存内存后却清空输入，导致后续请求无 Key | 非桌面端保留内存值；仅桌面安全存储成功后清空输入 |
 | 中 | Android 缺少原生加密插件，但平台说明可能被理解为可持久化 Key | 新增真实能力矩阵，明确 Android 当前仅内存并拒绝 `Preferences` |
+| 中 | 阅读器从知识库总入口导入轻量搜索函数，导致 4.93 MB 原典重新进入主包 | 改用 `normalize`/`retriever` 子路径；主包由约 5.22 MB 恢复为约 725 KB |
 
 ## 验证结果
 
-- `npm test`：24 个测试文件，295/295 通过。
+- `npm test`：30 个测试文件，322/322 通过。
 - `npm run typecheck`：7 个领域包、Web、Electron 全部通过。
-- `npm run build:web`：通过；首屏业务 JS 约 374 KB（gzip 127 KB），典籍异步块约 4.93 MB（gzip 799 KB）。
+- `npm run build:web`：通过；核心工作台 JS 约 725 KB（gzip 248 KB），典籍异步块约 4.93 MB（gzip 799 KB）。
 - `npm run desktop:build`：通过。
 
 ## 后续风险

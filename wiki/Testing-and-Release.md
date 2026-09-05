@@ -10,7 +10,7 @@ npm run build:web
 npm run desktop:build
 ```
 
-当前基线为 24 个测试文件、295 项测试。`typecheck` 覆盖 7 个领域包、Web 和 Electron。GitHub Actions 在每次 push 与 pull request 上运行测试、类型检查和 Web 构建。
+当前基线为 30 个测试文件、322 项测试。`typecheck` 覆盖 7 个领域包、Web 和 Electron。GitHub Actions 在每次 push 与 pull request 上运行测试、类型检查和 Web 构建。
 
 ## 按改动选择附加验证
 
@@ -26,6 +26,8 @@ npm run desktop:build
 | 响应式 UI | 按 [响应式设计](Responsive-Design.md) 的六个视口检查首屏、盘面、AI、案例和阅读器 |
 | Electron 安全 | 外链打开、主窗口导航拦截、受信 IPC、DPAPI Key 保存/删除 |
 | Android | `npm run android:sync`、`npm run android:build`，再在模拟器或真机执行专项脚本 |
+
+`npm run verify-playbook` 当前检查 12 张路径卡的完整性；`npm run verify-citation` 当前检查 18 部书中的 13895 条引用字段。涉及阅读器导入路径时还要检查构建清单，确认 `builtin-*.js` 保持独立异步块。
 
 ## 知识库引用列表
 
@@ -49,4 +51,4 @@ npm run generate-kb-citations
 
 - CI 不构建 Windows Electron 安装包和 Android APK，这两类发布仍需对应平台环境验收。
 - 仓库没有浏览器端自动化测试框架，响应式与交互目前依赖构建检查、脚本和人工/自动化浏览器验收。
-- 典籍异步块仍约 4.93 MB（gzip 约 799 KB）；它已移出首屏包，但弱网和低端设备仍需持续测量加载时间与内存占用。
+- 核心工作台主包约 725 KB（gzip 约 248 KB），典籍异步块约 4.93 MB（gzip 约 799 KB）；弱网和低端设备仍需持续测量加载时间与内存占用。

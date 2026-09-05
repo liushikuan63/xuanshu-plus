@@ -14,6 +14,7 @@
 
 - [Wiki 首页](wiki/Home.md)
 - [系统架构](wiki/Architecture.md)
+- [功能矩阵](wiki/Feature-Matrix.md)
 - [开发指南](wiki/Development.md)
 - [响应式设计](wiki/Responsive-Design.md)
 - [数据与安全](wiki/Data-and-Security.md)

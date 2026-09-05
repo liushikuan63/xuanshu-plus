@@ -19,6 +19,7 @@
 - [数据与安全](wiki/Data-and-Security.md)
 - [测试与发布](wiki/Testing-and-Release.md)
 - [代码审查记录](wiki/Code-Review-2026-09-05.md)
+- [双源项目合并审查](wiki/Merge-Review-2026-09-05.md)
 - [操作部署安装手册](docs/操作部署安装手册.md)
 - [内置知识库引用列表](docs/内置知识库引用列表.md)
 

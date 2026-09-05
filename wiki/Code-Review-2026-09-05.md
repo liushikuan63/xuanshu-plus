@@ -25,12 +25,15 @@
 | 中 | 手机出生输入、长盘面/引用和案例操作存在挤压风险 | 增加可见标签、响应式网格、安全区、断行和 44px 触控尺寸 |
 | 中 | Web 热更新重复注册插件并抛出“插件已存在” | 应用注册前检查 `hasPlugin`，恢复 Vite HMR |
 | 中 | BM25 接受重复文档 ID，损坏快照的 posting 还能引用不存在的文档 | 写入时拒绝重复 ID；恢复时校验文档、长度表和 posting 的引用一致性 |
+| 高 | 正时区清晨先换算 UTC 再截日，九个排盘入口可能误用前一日日柱 | 新增 `civilJdn`，按输入的本地公历日期统一换日并增加跨引擎回归 |
+| 中 | Web/Android 提示 Key 仅存内存后却清空输入，导致后续请求无 Key | 非桌面端保留内存值；仅桌面安全存储成功后清空输入 |
+| 中 | Android 缺少原生加密插件，但平台说明可能被理解为可持久化 Key | 新增真实能力矩阵，明确 Android 当前仅内存并拒绝 `Preferences` |
 
 ## 验证结果
 
-- `npm test`：20 个测试文件，271/271 通过。
+- `npm test`：24 个测试文件，295/295 通过。
 - `npm run typecheck`：7 个领域包、Web、Electron 全部通过。
-- `npm run build:web`：通过；首屏业务 JS 约 358 KB（gzip 121 KB），典籍异步块约 4.93 MB（gzip 799 KB）。
+- `npm run build:web`：通过；首屏业务 JS 约 374 KB（gzip 127 KB），典籍异步块约 4.93 MB（gzip 799 KB）。
 - `npm run desktop:build`：通过。
 
 ## 后续风险

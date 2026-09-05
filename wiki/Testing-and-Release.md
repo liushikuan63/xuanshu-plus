@@ -10,13 +10,15 @@ npm run build:web
 npm run desktop:build
 ```
 
-当前基线为 20 个测试文件、271 项测试。`typecheck` 覆盖 7 个领域包、Web 和 Electron。GitHub Actions 在每次 push 与 pull request 上运行测试、类型检查和 Web 构建。
+当前基线为 24 个测试文件、295 项测试。`typecheck` 覆盖 7 个领域包、Web 和 Electron。GitHub Actions 在每次 push 与 pull request 上运行测试、类型检查和 Web 构建。
 
 ## 按改动选择附加验证
 
 | 改动 | 附加检查 |
 |---|---|
 | 历法/排盘 | `npm run golden`，并运行对应术数测试文件 |
+| 民用日期换日 | 覆盖东八区清晨、跨时区同一本地日期，并确保所有归一化入口的日柱一致 |
+| 万年历/应期 | 检查月份天数、换月、日期窗口、待观察/到期分母和提前应验偏差 |
 | 引用/语料 | `npm run verify-citation`，必要时重新生成引用列表 |
 | playbook | `npm run verify-playbook` |
 | 知识库缓存 | 首次加载与二次加载各一次，验证 IndexedDB 命中和语料更新失效 |

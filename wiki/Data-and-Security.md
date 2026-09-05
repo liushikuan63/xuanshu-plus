@@ -7,10 +7,12 @@
 | 当前盘面 | React 内存 | React 内存 |
 | 案例本 | `localStorage` 的 `xuanshu.cases.v1` | 当前同样由渲染层本地存储 |
 | 知识库快照 | IndexedDB `xuanshu-knowledge` | Chromium IndexedDB |
-| AI Key | 页面内存，刷新即丢失 | `%APPDATA%` 下应用 `userData/keys.json`，由 `safeStorage`/DPAPI 加密 |
+| AI Key | 页面内存，刷新即丢失；Android 同样不写 `Preferences` 或 Web 存储 | `%APPDATA%` 下应用 `userData/keys.json`，由 `safeStorage`/DPAPI 加密 |
 | 搜索 API Key | 页面内存；请求时发送 | 页面内存；经 IPC 直传主进程代理，不持久化 |
 
 “DPAPI 加密落盘”不等于“不落盘”。密钥文件绑定当前 Windows 用户加密，渲染进程不能读取明文，但同一系统用户上下文中的恶意程序仍属于剩余风险。
+
+Android 当前没有接入 Keystore/EncryptedSharedPreferences 插件。`Capacitor Preferences` 只是通用键值存储，不能作为密钥安全存储；在原生加密桥和对应测试完成前，移动端 Key 必须保持内存模式。
 
 ## Electron 信任边界
 

@@ -7,6 +7,7 @@
 - [数据与安全](Data-and-Security.md)
 - [测试与发布](Testing-and-Release.md)
 - [代码审查记录](Code-Review-2026-09-05.md)
+- [双源项目合并审查](Merge-Review-2026-09-05.md)
 
 ## 仓库文档
 

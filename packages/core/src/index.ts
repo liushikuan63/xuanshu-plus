@@ -38,6 +38,7 @@ export * from './arts/bazi/lifetrend.js';
 export * from './arts/boneweight.js';
 export * from './arts/fortune.js';
 export * from './arts/hehun/bazi.js';
+export * from './arts/jingpi/bazi.js';
 export * from './arts/bazi/plugin.js';
 export * from './arts/meihua/engine.js';
 export * from './arts/meihua/plugin.js';

@@ -145,10 +145,55 @@ details summary { cursor: pointer; color: var(--accent); font-size: 14px; margin
 .followup-row b, .followup-row .meta { display: block; overflow-wrap: anywhere; }
 .followup-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 
+/* 命理工具 */
+.destiny-tabs { justify-content: flex-end; }
+.destiny-person { min-width: 0; margin: 14px 0 0; padding: 14px 0 0; border: 0; border-top: 1px solid var(--line); }
+.destiny-person legend { padding: 0 8px 0 0; color: var(--accent2); font-size: 13px; font-weight: 700; }
+.destiny-birth-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; align-items: end; }
+.gender-control { display: grid; grid-template-columns: 1fr 1fr; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.gender-control button { min-width: 0; min-height: 44px; padding: 5px; border: 0; background: #fff; color: var(--mut); cursor: pointer; }
+.gender-control button + button { border-left: 1px solid var(--line); }
+.gender-control button.active { background: var(--accent); color: #fff; }
+.destiny-action-row { display: flex; align-items: end; gap: 10px; margin-top: 12px; }
+.destiny-action-row .birth-field { width: min(220px, 100%); }
+.destiny-action-row .primary { margin: 0; }
+.compatibility-people { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.fortune-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.fortune-metric { min-width: 0; padding: 10px; border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: 8px; background: #fff; }
+.fortune-metric[data-level="留意"] { border-top-color: var(--accent2); }
+.fortune-metric > div { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.fortune-metric strong { color: var(--accent); font-size: 22px; }
+.fortune-metric > span { color: var(--mut); font-size: 11px; }
+.fortune-metric p { min-height: 3.2em; margin: 8px 0; font-size: 13px; line-height: 1.6; }
+.fortune-metric details summary { font-size: 12px; }
+.fortune-metric ul { margin: 5px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.6; }
+.destiny-notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.destiny-notes > div { min-width: 0; padding-left: 10px; border-left: 3px solid var(--accent); }
+.destiny-notes > div + div { border-left-color: var(--accent2); }
+.destiny-notes b { font-size: 13px; }
+.destiny-notes ul { margin: 5px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.7; }
+.bone-parts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 12px 0; padding: 1px; background: var(--line); border-radius: 8px; overflow: hidden; }
+.bone-parts div { min-width: 0; padding: 10px; background: #fff; }
+.bone-parts dt { color: var(--mut); font-size: 12px; overflow-wrap: anywhere; }
+.bone-parts dd { margin: 5px 0 0; color: var(--accent); font-size: 16px; font-weight: 700; }
+.bone-poem { margin: 14px 0; padding: 12px 14px; border-left: 3px solid var(--accent2); background: #fff7f4; font-family: "STKaiti", "KaiTi", serif; line-height: 1.9; }
+.compatibility-score { flex: 0 0 auto; color: var(--accent); font-size: 28px; font-weight: 700; }
+.compatibility-score small { margin-left: 3px; color: var(--mut); font-size: 11px; font-weight: 400; }
+.compatibility-list { border-top: 1px solid var(--line); }
+.compatibility-list article { padding: 10px 4px; border-bottom: 1px solid var(--line); }
+.compatibility-list article > div { display: flex; justify-content: space-between; gap: 8px; }
+.compatibility-list article span { flex: 0 0 auto; color: var(--mut); font-size: 12px; }
+.compatibility-list article[data-verdict="相合"] span { color: #2e7d32; }
+.compatibility-list article[data-verdict="注意"] span { color: #c62828; }
+.compatibility-list article p { margin: 4px 0; font-size: 13px; line-height: 1.6; }
+.compatibility-list article small { color: var(--mut); line-height: 1.5; }
+
 @media (max-width: 820px) {
   .facts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .followup-row { grid-template-columns: 1fr; }
   .followup-actions { justify-content: flex-start; }
+  .destiny-birth-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fortune-metrics, .bone-parts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 640px) {
@@ -181,6 +226,10 @@ details summary { cursor: pointer; color: var(--accent); font-size: 14px; margin
   .timeline-list li { grid-template-columns: 1fr; gap: 5px; }
   .timeline-list time small { display: inline; margin-left: 6px; }
   .followup-actions .secondary { flex: 1 1 calc(50% - 6px); }
+  .destiny-tabs { justify-content: flex-start; }
+  .destiny-birth-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .compatibility-people { grid-template-columns: 1fr; gap: 4px; }
+  .destiny-notes { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 340px) {
@@ -192,6 +241,9 @@ details summary { cursor: pointer; color: var(--accent); font-size: 14px; margin
   .header h1 { font-size: 20px; }
   .grid-twelve { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .primary:not(.small), .secondary:not(.small), .file-label { width: 100%; text-align: center; }
+  .destiny-action-row { align-items: stretch; flex-direction: column; }
+  .destiny-action-row .birth-field { width: 100%; }
+  .fortune-metrics, .bone-parts { grid-template-columns: 1fr; }
 }
 
 @media (pointer: coarse) {

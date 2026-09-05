@@ -27,6 +27,7 @@ import { TimelineView } from './TimelineView';
 import { FollowupPanel } from './FollowupPanel';
 
 const AlmanacView = lazy(async () => ({ default: (await import('./AlmanacView')).AlmanacView }));
+const DestinyToolsView = lazy(async () => ({ default: (await import('./DestinyToolsView')).DestinyToolsView }));
 
 for (const plugin of [liuyaoPlugin, meihuaPlugin, baziPlugin, ziweiPlugin, xiaoliurenPlugin, qimenPlugin, liurenPlugin, jinkouPlugin]) {
   if (!hasPlugin(plugin.id)) registerPlugin(plugin);
@@ -100,7 +101,7 @@ export function App() {
   const [kbLoading, setKbLoading] = useState(true);
   const [kbError, setKbError] = useState('');
   const [readerCorpus, setReaderCorpus] = useState<CorpusSection[]>([]);
-  const [mode, setMode] = useState<'cast' | 'reader' | 'almanac'>('cast');
+  const [mode, setMode] = useState<'cast' | 'reader' | 'almanac' | 'destiny'>('cast');
 
   // 异步从 IndexedDB 恢复知识库快照（命中缓存免重建 BM25 索引；语料版本变化自动重建）
   useEffect(() => {
@@ -537,6 +538,7 @@ export function App() {
         <div className="chips">
           <button className={`chip ${mode === 'cast' ? 'active' : ''}`} onClick={() => setMode('cast')}>占卜工作台</button>
           <button className={`chip ${mode === 'almanac' ? 'active' : ''}`} onClick={() => setMode('almanac')}>万年历</button>
+          <button className={`chip ${mode === 'destiny' ? 'active' : ''}`} onClick={() => setMode('destiny')}>命理工具</button>
           <button className={`chip ${mode === 'reader' ? 'active' : ''}`} onClick={() => setMode('reader')}>典籍阅读</button>
         </div>
       </header>
@@ -549,6 +551,10 @@ export function App() {
         ) : mode === 'almanac' ? (
           <Suspense fallback={<section className="card"><p className="meta">万年历载入中…</p></section>}>
             <AlmanacView />
+          </Suspense>
+        ) : mode === 'destiny' ? (
+          <Suspense fallback={<section className="card"><p className="meta">命理工具载入中…</p></section>}>
+            <DestinyToolsView />
           </Suspense>
         ) : (<>
         <section className="card">

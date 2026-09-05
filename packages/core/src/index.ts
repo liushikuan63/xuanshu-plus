@@ -23,6 +23,7 @@ export * from './plugins/registry.js';
 export * from './board/schema.js';
 export * from './artLabels.js';
 export * from './timing.js';
+export * from './platform/index.js';
 
 // 术数引擎
 export * from './arts/liuyao/trigrams.js';

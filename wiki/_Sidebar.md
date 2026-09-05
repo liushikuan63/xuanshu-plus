@@ -1,12 +1,12 @@
 ## 玄枢 Wiki
 
-- [首页](Home)
-- [系统架构](Architecture)
-- [开发指南](Development)
-- [响应式设计](Responsive-Design)
-- [数据与安全](Data-and-Security)
-- [测试与发布](Testing-and-Release)
-- [代码审查记录](Code-Review-2026-09-05)
+- [首页](Home.md)
+- [系统架构](Architecture.md)
+- [开发指南](Development.md)
+- [响应式设计](Responsive-Design.md)
+- [数据与安全](Data-and-Security.md)
+- [测试与发布](Testing-and-Release.md)
+- [代码审查记录](Code-Review-2026-09-05.md)
 
 ## 仓库文档
 

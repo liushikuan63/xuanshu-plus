@@ -19,12 +19,12 @@
 
 新贡献者建议依次阅读：
 
-1. [系统架构](Architecture)：先理解层次、依赖方向和关键数据流。
-2. [开发指南](Development)：配置环境并运行本地工作台。
-3. [数据与安全](Data-and-Security)：了解密钥、案例、知识库和 Electron 信任边界。
-4. [响应式设计](Responsive-Design)：修改 UI 前确认手机、平板和桌面约束。
-5. [测试与发布](Testing-and-Release)：提交前完成对应验证。
-6. [代码审查记录](Code-Review-2026-09-05)：查看已修复问题和仍需跟进的风险。
+1. [系统架构](Architecture.md)：先理解层次、依赖方向和关键数据流。
+2. [开发指南](Development.md)：配置环境并运行本地工作台。
+3. [数据与安全](Data-and-Security.md)：了解密钥、案例、知识库和 Electron 信任边界。
+4. [响应式设计](Responsive-Design.md)：修改 UI 前确认手机、平板和桌面约束。
+5. [测试与发布](Testing-and-Release.md)：提交前完成对应验证。
+6. [代码审查记录](Code-Review-2026-09-05.md)：查看已修复问题和仍需跟进的风险。
 
 ## 事实来源
 

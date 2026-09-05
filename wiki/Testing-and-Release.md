@@ -21,7 +21,7 @@ npm run desktop:build
 | playbook | `npm run verify-playbook` |
 | 知识库缓存 | 首次加载与二次加载各一次，验证 IndexedDB 命中和语料更新失效 |
 | 案例本 | 导入、导出、重复记录、checksum 篡改、存储配额失败 |
-| 响应式 UI | 按 [响应式设计](Responsive-Design) 的六个视口检查首屏、盘面、AI、案例和阅读器 |
+| 响应式 UI | 按 [响应式设计](Responsive-Design.md) 的六个视口检查首屏、盘面、AI、案例和阅读器 |
 | Electron 安全 | 外链打开、主窗口导航拦截、受信 IPC、DPAPI Key 保存/删除 |
 | Android | `npm run android:sync`、`npm run android:build`，再在模拟器或真机执行专项脚本 |
 

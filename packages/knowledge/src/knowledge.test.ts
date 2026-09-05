@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Bm25Index, tokenize, CJK_SYNONYMS } from './bm25.js';
+import { foldVariants, includesNormalizedText, normalizeSearchText } from './normalize.js';
 import { Retriever, CATEGORY_EXPANSION, enrichRuleCitations } from './retriever.js';
 import { builtinZhouyiCorpus, builtinCorpus, builtinStats } from './builtin.js';
 import { corpusHashOf, buildBuiltinSnapshot, MemoryKnowledgeStore, loadBuiltinKnowledge } from './persist.js';
@@ -12,6 +13,14 @@ describe('CJK 分词', () => {
     expect(tokens).toContain('用神');
     expect(tokens).toContain('旺');
     expect(tokens).toContain('旺相');
+  });
+
+  it('统一异体字、繁简字并识别扩展汉字', () => {
+    expect(foldVariants('㐫髙淂𡈽')).toBe('凶高得土');
+    expect(foldVariants('𠩄𣴑𤣥𤼵𦲞𨶚𩔖')).toBe('所流玄發老遂類');
+    expect(normalizeSearchText('妻財陰陽變卦')).toBe('妻财阴阳变卦');
+    expect(tokenize('𡈽旺')).toEqual(expect.arrayContaining(['土', '土旺']));
+    expect(includesNormalizedText('陰陽動靜，變化無窮', '阴阳动静')).toBe(true);
   });
 });
 
@@ -41,6 +50,16 @@ describe('BM25', () => {
     const idx = new Bm25Index();
     idx.add({ id: 's1', text: '用神旺相' });
     expect(() => idx.add({ id: 's1', text: '用神衰弱' })).toThrow('BM25 文档 id 无效或重复');
+  });
+
+  it('简体查询可命中繁体索引正文', () => {
+    const idx = new Bm25Index();
+    idx.addAll([
+      { id: 'traditional', text: '妻財爻逢旬空，陰陽動靜。' },
+      { id: 'other', text: '官鬼旺动，世应相克。' },
+    ]);
+    expect(idx.search('妻财', 1)[0]?.docId).toBe('traditional');
+    expect(idx.search('阴阳', 1)[0]?.docId).toBe('traditional');
   });
 });
 
@@ -201,6 +220,14 @@ describe('知识库持久化（IndexedDB 落库）', () => {
     const b = restored.search('失物 用神', 3);
     expect(b.map((r) => r.docId)).toEqual(a.map((r) => r.docId));
     expect(b[0]!.score).toBeCloseTo(a[0]!.score, 6);
+  });
+
+  it('拒绝旧版分词快照，避免复用未归一化的索引', () => {
+    const idx = new Bm25Index();
+    idx.add({ id: 's1', text: '陰陽動靜' });
+    const snapshot = idx.exportSnapshot();
+    snapshot.version = 'bm25-cjk-v1';
+    expect(Bm25Index.fromSnapshot(snapshot)).toBeNull();
   });
 
   it('Retriever 快照 roundtrip：内置语料恢复后可检索', () => {

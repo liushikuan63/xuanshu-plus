@@ -4,6 +4,8 @@
  * 同义词只做查询扩展，不做语义替代。
  */
 
+import { normalizeSearchText } from './normalize.js';
+
 export interface TermDoc {
   id: string;
   text: string;
@@ -25,15 +27,16 @@ export const DEFAULT_BM25: Bm25Options = { k1: 1.5, b: 0.75 };
 /** CJK unigram + bigram 分词 */
 export function tokenize(text: string): string[] {
   const tokens: string[] = [];
-  const chars = [...text.replace(/\s+/g, '')];
+  const chars = [...normalizeSearchText(text).replace(/\s+/g, '')];
+  const isHan = (character: string) => /\p{Script=Han}/u.test(character);
   for (const ch of chars) {
-    if (/[\u4e00-\u9fff]/.test(ch)) tokens.push(ch);
+    if (isHan(ch)) tokens.push(ch);
     else if (/[a-zA-Z0-9]/.test(ch)) tokens.push(ch.toLowerCase());
   }
   for (let i = 0; i < chars.length - 1; i++) {
     const a = chars[i]!;
     const b = chars[i + 1]!;
-    if (/[\u4e00-\u9fff]/.test(a) && /[\u4e00-\u9fff]/.test(b)) tokens.push(a + b);
+    if (isHan(a) && isHan(b)) tokens.push(a + b);
   }
   return tokens;
 }
@@ -44,7 +47,7 @@ export class Bm25Index {
   private docLen = new Map<string, number>();
   private avgLen = 0;
   private opts: Bm25Options;
-  private version = 'bm25-cjk-v1';
+  private version = 'bm25-cjk-v2';
 
   constructor(opts: Bm25Options = DEFAULT_BM25) {
     this.opts = opts;
@@ -122,7 +125,7 @@ export class Bm25Index {
 
   /** 从快照恢复（校验 version/结构，损坏则返回 null 由调用方重建） */
   static fromSnapshot(snap: Bm25Snapshot): Bm25Index | null {
-    if (!snap || snap.version !== 'bm25-cjk-v1') return null;
+    if (!snap || snap.version !== 'bm25-cjk-v2') return null;
     if (!Array.isArray(snap.docs) || !Array.isArray(snap.docLen) || !Array.isArray(snap.postings)) return null;
     if (!snap.opts || !Number.isFinite(snap.opts.k1) || snap.opts.k1 <= 0 || !Number.isFinite(snap.opts.b) || snap.opts.b < 0 || snap.opts.b > 1) return null;
     if (!Number.isFinite(snap.avgLen) || snap.avgLen < 0) return null;

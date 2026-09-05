@@ -25,6 +25,7 @@ import { desktopBridge } from './desktopBridge';
 import { ReaderView } from './ReaderView';
 import { TimelineView } from './TimelineView';
 import { FollowupPanel } from './FollowupPanel';
+import { BaziJingPiView } from './BaziJingPiView';
 
 const AlmanacView = lazy(async () => ({ default: (await import('./AlmanacView')).AlmanacView }));
 const DestinyToolsView = lazy(async () => ({ default: (await import('./DestinyToolsView')).DestinyToolsView }));
@@ -668,6 +669,8 @@ export function App() {
             </section>
           );
         })()}
+
+        {art === 'bazi' && chart && <BaziJingPiView chart={chart as BaziChart} />}
 
         {rules.length > 0 && (
           <section className="card">

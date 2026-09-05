@@ -188,6 +188,21 @@ details summary { cursor: pointer; color: var(--accent); font-size: 14px; margin
 .compatibility-list article p { margin: 4px 0; font-size: 13px; line-height: 1.6; }
 .compatibility-list article small { color: var(--mut); line-height: 1.5; }
 
+/* 八字分层解读 */
+.jingpi-sections { margin-top: 12px; border-top: 1px solid var(--line); }
+.jingpi-section { padding: 13px 4px; border-bottom: 1px solid var(--line); }
+.jingpi-title { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.jingpi-title h3 { margin: 0; font-size: 15px; }
+.jingpi-title span { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 4px; padding: 2px 6px; color: var(--mut); font-size: 11px; }
+.jingpi-title span[data-level="C"] { border-color: #78a697; color: var(--accent); }
+.jingpi-section > p { margin: 7px 0; font-size: 13px; line-height: 1.7; }
+.jingpi-section ul, .jingpi-review ul { margin: 5px 0; padding-left: 20px; font-size: 13px; line-height: 1.7; }
+.jingpi-section details { margin-top: 7px; }
+.jingpi-section details summary { font-size: 12px; }
+.jingpi-section details ul { color: var(--mut); font-size: 12px; }
+.jingpi-review { margin-top: 12px; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--soft); }
+.jingpi-review b { font-size: 13px; }
+
 @media (max-width: 820px) {
   .facts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .followup-row { grid-template-columns: 1fr; }
@@ -230,6 +245,7 @@ details summary { cursor: pointer; color: var(--accent); font-size: 14px; margin
   .destiny-birth-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .compatibility-people { grid-template-columns: 1fr; gap: 4px; }
   .destiny-notes { grid-template-columns: 1fr; }
+  .jingpi-title { align-items: flex-start; }
 }
 
 @media (max-width: 340px) {

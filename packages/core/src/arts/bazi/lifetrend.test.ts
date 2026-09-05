@@ -20,6 +20,8 @@ describe('八字一生趋势', () => {
     expect(summary).toContain('校准');
     // 首步大运应衔接起运年龄（显示取整）
     expect(trends[0]!.startAge).toBe(Math.round(c.qiyun.age));
+    // 甲日主见丁为伤官；不得把大运天干自己与自己比较成「比肩」。
+    expect(trends[0]!.note).toContain('想法多');
   });
 
   it('当前流年一句白话（取激活大运）', async () => {

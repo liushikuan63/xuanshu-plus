@@ -55,9 +55,9 @@ function scoreOf(ss: string, xi: Set<string>, ji: Set<string>): number {
 }
 
 /** 大运干支喜忌打分 → 吉凶倾向 + 一句话白话 */
-function trendOf(gan: Gan, zhi: Zhi, xi: Set<string>, ji: Set<string>): { trend: TrendLevel; note: string } {
-  const ganS = shiShenWx(gan, gan);
-  const zhiS = shiShenYinYang(gan, zhiStem(ZHI_WUXING[zhi]));
+function trendOf(dayMaster: Gan, gan: Gan, zhi: Zhi, xi: Set<string>, ji: Set<string>): { trend: TrendLevel; note: string } {
+  const ganS = shiShenWx(dayMaster, gan);
+  const zhiS = shiShenYinYang(dayMaster, zhiStem(ZHI_WUXING[zhi]));
   const score = scoreOf(ganS, xi, ji) + scoreOf(zhiS, xi, ji);
   const note = SHI_SHEN_BAIHUA[ganS] ?? SHI_SHEN_BAIHUA[zhiS] ?? '平稳过渡，按部就班';
   const trend: TrendLevel = score > 0 ? '旺' : score < 0 ? '弱' : '平';
@@ -74,7 +74,7 @@ function zhiStem(wx: string): Gan {
 export function baziLifeTrends(chart: BaziChart): { trends: LifeTrend[]; summary: string } {
   const { xi, ji } = xiJiOf(chart);
   const trends: LifeTrend[] = chart.dayun.map((d) => {
-    const { trend, note } = trendOf(d.ganZhi.gan as Gan, d.ganZhi.zhi as Zhi, xi, ji);
+    const { trend, note } = trendOf(chart.day.gan, d.ganZhi.gan as Gan, d.ganZhi.zhi as Zhi, xi, ji);
     return {
       startAge: Math.round(d.startAge),
       startYear: Math.round(d.startYear),
@@ -98,6 +98,6 @@ export function baziCurrentYearNote(chart: BaziChart, year: number): string | nu
   const active = chart.dayun.find((d) => year >= d.startYear && year < d.startYear + 10) ?? chart.dayun[0];
   if (!active) return null;
   const { xi, ji } = xiJiOf(chart);
-  const { trend, note } = trendOf(active.ganZhi.gan as Gan, active.ganZhi.zhi as Zhi, xi, ji);
+  const { trend, note } = trendOf(chart.day.gan, active.ganZhi.gan as Gan, active.ganZhi.zhi as Zhi, xi, ji);
   return `${year}年处「${active.ganZhi.gan}${active.ganZhi.zhi}」大运（${trend === '旺' ? '偏顺' : trend === '弱' ? '偏阻' : '平稳'}）：${note}。`;
 }

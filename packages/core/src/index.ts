@@ -15,6 +15,7 @@ export * from './calendar/lunar.js';
 export * from './calendar/solarTime.js';
 export * from './calendar/calibrate.js';
 export * from './calendar/monthPillar.js';
+export * from './calendar/almanac.js';
 
 // 契约与盘面
 export * from './types.js';

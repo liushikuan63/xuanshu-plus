@@ -35,6 +35,7 @@ export * from './arts/i18n/plain.js';
 export * from './arts/liuyao/plugin.js';
 export * from './arts/bazi/engine.js';
 export * from './arts/bazi/lifetrend.js';
+export * from './arts/boneweight.js';
 export * from './arts/bazi/plugin.js';
 export * from './arts/meihua/engine.js';
 export * from './arts/meihua/plugin.js';

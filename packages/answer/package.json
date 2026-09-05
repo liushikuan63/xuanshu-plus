@@ -1,0 +1,19 @@
+{
+  "name": "@xuanshu/answer",
+  "version": "0.1.0",
+  "description": "玄枢答复装配：模板 + 事实 + 原文 + 受约束 AI 四层",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@xuanshu/core": "*",
+    "@xuanshu/intake": "*",
+    "@xuanshu/ledger": "*"
+  }
+}

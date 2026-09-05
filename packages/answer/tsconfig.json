@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": [],
+    "paths": {
+      "@xuanshu/core": ["../core/src/index.ts"],
+      "@xuanshu/intake": ["../intake/src/index.ts"],
+      "@xuanshu/ledger": ["../ledger/src/index.ts"]
+    }
+  },
+  "include": ["src", "../core/src/types"]
+}

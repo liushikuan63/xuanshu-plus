@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+release/
+.gradle/
+*.tsbuildinfo
+.env
+.env.node
+local.properties
+*.apk
+*.aab
+*.exe
+*.blockmap
+data/.kb/books/*/corpus.jsonl
+data/.kb/citation-index.json
+data/cases/
+coverage/

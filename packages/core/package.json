@@ -1,0 +1,21 @@
+{
+  "name": "@xuanshu/core",
+  "version": "0.1.0",
+  "description": "玄枢核心：历法内核 + 插件框架 + 术数引擎（纯 TS，零 DOM/Node 依赖）",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "cal": "tsx scripts/cal-report.mjs",
+    "golden": "tsx scripts/golden.mjs"
+  },
+  "dependencies": {
+    "astronomy-engine": "^2.1.19",
+    "iztro": "~2.6.0",
+    "lunar-javascript": "~1.7.7"
+  }
+}

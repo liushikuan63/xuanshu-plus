@@ -1,0 +1,17 @@
+{
+  "name": "@xuanshu/ai",
+  "version": "0.1.0",
+  "description": "玄枢 AI 精解：ProviderRegistry、提示工程（禁止算盘 + 引用纪律）、OpenAI 兼容客户端、审计",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@xuanshu/core": "*"
+  }
+}

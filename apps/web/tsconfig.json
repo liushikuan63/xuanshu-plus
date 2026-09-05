@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "noEmit": true,
+    "paths": {
+      "@xuanshu/ai": ["../../packages/ai/src/index.ts"],
+      "@xuanshu/core": ["../../packages/core/src/index.ts"],
+      "@xuanshu/intake": ["../../packages/intake/src/index.ts"],
+      "@xuanshu/knowledge": ["../../packages/knowledge/src/index.ts"],
+      "@xuanshu/knowledge/*": ["../../packages/knowledge/src/*"],
+      "@xuanshu/ledger": ["../../packages/ledger/src/index.ts"],
+      "@xuanshu/answer": ["../../packages/answer/src/index.ts"]
+    }
+  },
+  "include": ["src", "../../packages/core/src/types"]
+}

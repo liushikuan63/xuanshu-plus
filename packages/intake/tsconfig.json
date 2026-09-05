@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": [],
+    "paths": {
+      "@xuanshu/core": ["../core/src/index.ts"]
+    }
+  },
+  "include": ["src", "../core/src/types"]
+}

@@ -1,0 +1,41 @@
+{
+  "name": "xuanshu-plus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "玄枢 xuanshu · 五术综合占卜工作台（排盘确定性 + 解释开放性 + 路径可学习）",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "doctor": "node scripts/run.mjs doctor",
+    "install:all": "node scripts/run.mjs install",
+    "test": "node scripts/run.mjs test",
+    "typecheck": "node scripts/run.mjs typecheck",
+    "build:web": "node scripts/run.mjs build:web",
+    "dev:web": "node scripts/run.mjs dev:web",
+    "cal": "node scripts/run.mjs cal",
+    "golden": "node scripts/run.mjs golden",
+    "verify-citation": "node scripts/run.mjs verify-citation",
+    "verify-playbook": "node scripts/run.mjs verify-playbook",
+    "generate-kb-citations": "node scripts/run.mjs generate-kb-citations",
+    "android:sync": "node scripts/run.mjs android:sync",
+    "android:build": "node scripts/run.mjs android:build",
+    "desktop:build": "node scripts/run.mjs desktop:build",
+    "desktop:dev": "node scripts/run.mjs desktop:dev",
+    "desktop:dist": "node scripts/run.mjs desktop:dist"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.0",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.11",
+    "ws": "^8.21.3"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "overrides": {
+    "vite": "8.1.5"
+  }
+}

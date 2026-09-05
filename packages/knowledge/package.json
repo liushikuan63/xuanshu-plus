@@ -1,0 +1,20 @@
+{
+  "name": "@xuanshu/knowledge",
+  "version": "0.1.0",
+  "description": "玄枢知识库：BM25 检索、同义词扩展、语料索引",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./builtin": "./src/builtin.ts",
+    "./persist": "./src/persist.ts",
+    "./retriever": "./src/retriever.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@xuanshu/core": "*"
+  }
+}

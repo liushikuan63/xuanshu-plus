@@ -1,0 +1,19 @@
+{
+  "name": "@xuanshu/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "玄枢桌面端（Electron，Win11 适配 + safeStorage 密钥链路）",
+  "main": "dist/main.js",
+  "author": "玄枢 <support@xuanshu.local>",
+  "scripts": {
+    "start": "electron .",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "dist": "npm run build && electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "44.0.0",
+    "electron-builder": "^26.0.0",
+    "typescript": "~5.9.3"
+  }
+}

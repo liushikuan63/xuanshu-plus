@@ -1,0 +1,17 @@
+{
+  "name": "@xuanshu/ledger",
+  "version": "0.1.0",
+  "description": "玄枢案例本：99 条配额、主动标注、闭环统计、导入导出",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@xuanshu/core": "*"
+  }
+}

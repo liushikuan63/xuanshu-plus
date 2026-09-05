@@ -1,0 +1,32 @@
+appId: com.xuanshu.workbench
+productName: 玄枢
+copyright: Copyright © 2026 玄枢
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - package.json
+extraResources:
+  - from: ../web/dist
+    to: web-dist
+    filter:
+      - "**/*"
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: 玄枢
+  uninstallDisplayName: 玄枢
+portable:
+  artifactName: "${productName}-portable-${version}-${arch}.${ext}"

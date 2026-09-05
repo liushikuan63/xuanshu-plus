@@ -15,7 +15,7 @@ import {
   type BoardSpec, type LiuyaoChart, type MeihuaChart, type BaziChart, type ZiweiChart, type XiaoliurenChart, type QimenChart, type LiuRenChart, type JinKouChart,
 } from '@xuanshu/core';
 import { IntakeWizard, playbookFor, TAXONOMY, categories, checkQuality } from '@xuanshu/intake';
-import { LocalCaseStore, LocalFollowupStore, makeCaseRecord, quotaStatus, exportJson, exportCsv, exportMarkdown, parseCaseImport, isIncomingCaseNewer, applyOutcome, calibrate, type OutcomeResult, type WindowFollowup, type WindowVerdict } from '@xuanshu/ledger';
+import { LocalCaseStore, LocalFollowupStore, makeCaseRecord, quotaStatus, exportJson, exportCsv, exportMarkdown, parseCaseImport, isIncomingCaseNewer, applyOutcome, type OutcomeResult, type WindowFollowup, type WindowVerdict } from '@xuanshu/ledger';
 import { DISCLAIMER, timingCandidatesOf } from '@xuanshu/answer';
 import type { TimingCandidate } from '@xuanshu/core';
 import { Retriever, enrichRuleCitations, type CorpusSection } from '@xuanshu/knowledge/retriever';
@@ -24,8 +24,8 @@ import { plainRuleText, plainSummary, baziLifeTrends, baziCurrentYearNote } from
 import { desktopBridge } from './desktopBridge';
 import { ReaderView } from './ReaderView';
 import { TimelineView } from './TimelineView';
-import { FollowupPanel } from './FollowupPanel';
 import { BaziJingPiView } from './BaziJingPiView';
+import { CaseCenterView } from './CaseCenterView';
 
 const AlmanacView = lazy(async () => ({ default: (await import('./AlmanacView')).AlmanacView }));
 const DestinyToolsView = lazy(async () => ({ default: (await import('./DestinyToolsView')).DestinyToolsView }));
@@ -64,8 +64,6 @@ const METHOD_OPTIONS: Record<ArtId, Array<[Method, string]>> = {
 
 const LEVEL_COLOR: Record<string, string> = { A: '#2e7d32', B: '#1565c0', C: '#616161', D: '#e65100', E: '#c62828' };
 const LEVEL_LABEL: Record<string, string> = { A: '原典', B: '注疏', C: '现代整理', D: '流派说法', E: 'AI 生成' };
-const OUTCOME_OPTIONS: OutcomeResult[] = ['应验', '部分应验', '未应验', '无法判断'];
-
 type AnyChart = LiuyaoChart | MeihuaChart | XiaoliurenChart | BaziChart | ZiweiChart | QimenChart | LiuRenChart | JinKouChart;
 
 const store = new LocalCaseStore();
@@ -102,7 +100,7 @@ export function App() {
   const [kbLoading, setKbLoading] = useState(true);
   const [kbError, setKbError] = useState('');
   const [readerCorpus, setReaderCorpus] = useState<CorpusSection[]>([]);
-  const [mode, setMode] = useState<'cast' | 'reader' | 'almanac' | 'destiny'>('cast');
+  const [mode, setMode] = useState<'cast' | 'reader' | 'almanac' | 'destiny' | 'cases'>('cast');
 
   // 异步从 IndexedDB 恢复知识库快照（命中缓存免重建 BM25 索引；语料版本变化自动重建）
   useEffect(() => {
@@ -540,6 +538,7 @@ export function App() {
           <button className={`chip ${mode === 'cast' ? 'active' : ''}`} onClick={() => setMode('cast')}>占卜工作台</button>
           <button className={`chip ${mode === 'almanac' ? 'active' : ''}`} onClick={() => setMode('almanac')}>万年历</button>
           <button className={`chip ${mode === 'destiny' ? 'active' : ''}`} onClick={() => setMode('destiny')}>命理工具</button>
+          <button className={`chip ${mode === 'cases' ? 'active' : ''}`} onClick={() => setMode('cases')}>案例本</button>
           <button className={`chip ${mode === 'reader' ? 'active' : ''}`} onClick={() => setMode('reader')}>典籍阅读</button>
         </div>
       </header>
@@ -557,6 +556,19 @@ export function App() {
           <Suspense fallback={<section className="card"><p className="meta">命理工具载入中…</p></section>}>
             <DestinyToolsView />
           </Suspense>
+        ) : mode === 'cases' ? (
+          <CaseCenterView
+            cases={cases}
+            stats={stats}
+            followups={followups}
+            notes={outcomeNotes}
+            statusMessage={saved}
+            onNoteChange={(caseId, note) => setOutcomeNotes((current) => ({ ...current, [caseId]: note }))}
+            onOutcome={(record, result) => void markOutcome(record, result)}
+            onFollowupVerdict={(key, verdict) => void markWindowVerdict(key, verdict)}
+            onExport={(kind) => void exportCases(kind)}
+            onImport={(file) => void importCases(file)}
+          />
         ) : (<>
         <section className="card">
           <h2>选择术数</h2>
@@ -799,49 +811,9 @@ export function App() {
               </label>
             </div>
             {saved && <p className="ok">{saved}</p>}
-            {cases.length > 0 && (
-              <details>
-                <summary>已存 {cases.length} 条（本地持久化，点击展开后可为每条回标应验结果）</summary>
-                <ul className="cases">
-                  {cases.map((c) => {
-                    const title = c.annotation.outcome && <span className="ok"> · 已回标：{c.annotation.outcome.result}</span>;
-                    return (
-                      <li key={c.caseId}>
-                        <div>[{artLabel(c.artType)}] {c.question.summary} → {(c.result.chart as { benName?: string; name?: string; year?: unknown }).benName ?? (c.result.chart as { name?: string }).name ?? ''}（{c.createdAt.slice(0, 16)}）{title}</div>
-                        <div className="row">
-                          {OUTCOME_OPTIONS.map((o) => <button key={o} className="secondary small" onClick={() => markOutcome(c, o)}>{o}</button>)}
-                          <input value={outcomeNotes[c.caseId] ?? ''} onChange={(e) => setOutcomeNotes({ ...outcomeNotes, [c.caseId]: e.target.value })} placeholder="备注（如：三天内在车站找回）" className="crossfill" />
-                        </div>
-                        {c.annotation.outcome?.note && <div className="meta">回标备注：{c.annotation.outcome.note}（{c.annotation.outcome.at.slice(0, 16)}）</div>}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </details>
-            )}
+            <button className="secondary" type="button" onClick={() => setMode('cases')}>打开案例本（{cases.length} 条）</button>
           </section>
         )}
-
-        <FollowupPanel rows={followups} onVerdict={(key, verdict) => void markWindowVerdict(key, verdict)} />
-
-        <section className="card">
-          <h2>个人复盘与校准（仅校准你的解释习惯，永不回写排盘）</h2>
-          {!stats || cases.length === 0 ? (
-            <p className="meta">存档几条案例并回标应验后，这里会给出按术数/事项的应验率提示。</p>
-          ) : (
-            <>
-              {calibrate(cases, stats).map((i) => (
-                <div key={`${i.dimension}.${i.key}`} className="rule">
-                  <span className="sev" data-sev="变数">{i.dimension === 'art' ? '术数' : '事项'}</span>
-                  <span>{i.message}</span>
-                </div>
-              ))}
-              {cases.filter((c) => !c.annotation.outcome).length > 0 && (
-                <p className="meta">待回标 {cases.filter((c) => !c.annotation.outcome).length} 条（回标后才能计入应验率）。</p>
-              )}
-            </>
-          )}
-        </section>
         </>)}
       </main>
 

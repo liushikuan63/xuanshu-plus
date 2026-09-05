@@ -11,7 +11,7 @@ import {
   castJinKou,
   liuyaoPlugin, meihuaPlugin, baziPlugin, ziweiPlugin, xiaoliurenPlugin, qimenPlugin, liurenPlugin, jinkouPlugin,
   registerPlugin, getPlugin, hasPlugin,
-  chartRules, artLabel, yongShenRules, timelineForChart,
+  chartRules, artLabel, yongShenRules, timelineForChart, checkKeyWrite, detectPlatform,
   type BoardSpec, type LiuyaoChart, type MeihuaChart, type BaziChart, type ZiweiChart, type XiaoliurenChart, type QimenChart, type LiuRenChart, type JinKouChart,
 } from '@xuanshu/core';
 import { IntakeWizard, playbookFor, TAXONOMY, categories, checkQuality } from '@xuanshu/intake';
@@ -21,7 +21,7 @@ import type { TimingCandidate } from '@xuanshu/core';
 import { Retriever, enrichRuleCitations, type CorpusSection } from '@xuanshu/knowledge/retriever';
 import { AI_PROVIDERS, providerById, chatCompletions, buildMessages, parseJudgmentResult, testConnection, webSearch, summarizeSearchResults, type AIConnectionConfig, type JudgmentResult } from '@xuanshu/ai';
 import { plainRuleText, plainSummary, baziLifeTrends, baziCurrentYearNote } from '@xuanshu/core';
-import { desktopBridge, isDesktop } from './desktopBridge';
+import { desktopBridge } from './desktopBridge';
 import { ReaderView } from './ReaderView';
 import { TimelineView } from './TimelineView';
 import { FollowupPanel } from './FollowupPanel';
@@ -73,6 +73,12 @@ function ctxAt(date: Date) {
 }
 
 export function App() {
+  const platform = useMemo(() => detectPlatform({
+    userAgent: typeof navigator === 'undefined' ? '' : navigator.userAgent,
+    hasDesktopBridge: typeof window !== 'undefined' && !!window.xuanshuDesktop?.isDesktop,
+    hasCapacitor: typeof window !== 'undefined' && 'Capacitor' in window,
+    notificationApi: typeof window !== 'undefined' && 'Notification' in window,
+  }), []);
   const [art, setArt] = useState<ArtId>('liuyao');
   const [category, setCategory] = useState<string>('失物');
   const [question, setQuestion] = useState('');
@@ -473,14 +479,19 @@ export function App() {
     }
   }
 
-  /** 桌面端：Key 保存到主进程 safeStorage(DPAPI)；Web 端仅内存 */
-  async function saveApiKey(key: string) {
+  async function saveApiKey(key: string): Promise<{ message: string; persisted: boolean }> {
     const bridge = desktopBridge();
-    if (bridge) {
-      await bridge.keychain.set(aiCfg.providerId, key);
-      return '已存入系统安全存储（DPAPI 加密）';
+    if (platform.kind === 'desktop') {
+      const policy = checkKeyWrite(platform, 'safeStorage');
+      if (!policy.ok) throw new Error(policy.reason);
+      if (!bridge) throw new Error('桌面安全桥不可用，未保存密钥');
+      if (!await bridge.keychain.set(aiCfg.providerId, key)) throw new Error('系统安全存储拒绝了写入');
+      return { message: '已存入系统安全存储（DPAPI 加密）', persisted: true };
     }
-    return '已保存（仅内存，刷新后需重填）';
+    return {
+      message: `${platform.label}仅在本页内存中使用 Key，刷新或退出后需重填`,
+      persisted: false,
+    };
   }
 
   /** 联网研读：检索词默认取问句或当前盘面主题；结果仅为资料，需自行核实 */
@@ -503,7 +514,9 @@ export function App() {
     } catch (e) {
       const msg = (e as Error).message;
       setSearchResults('');
-      setSearchMsg(msg.includes('Failed to fetch') || msg.includes('fetch') ? `直连失败（浏览器 CORS 限制）。${isDesktop() ? '请检查主进程搜索代理。' : '桌面版（Electron）可经主进程代理联网；Web 版请自配允许 CORS 的搜索服务。'}` : msg);
+      setSearchMsg(msg.includes('Failed to fetch') || msg.includes('fetch')
+        ? `${platform.limitation('webSearch', '联网检索')} ${platform.kind === 'desktop' ? '请检查主进程搜索代理。' : '请改用允许跨域访问的 HTTPS 检索服务。'}`
+        : msg);
     } finally {
       setSearchBusy(false);
     }
@@ -705,7 +718,7 @@ export function App() {
               <option value="serper">Serper（Google 检索）</option>
               <option value="bing">必应 Web Search API</option>
             </select>
-            <input type="password" value={searchCfg.apiKey} onChange={(e) => setSearchCfg({ ...searchCfg, apiKey: e.target.value })} placeholder={isDesktop() ? '检索 API Key（经主进程代理发送）' : '检索 API Key（仅内存）'} className="question" />
+            <input type="password" value={searchCfg.apiKey} onChange={(e) => setSearchCfg({ ...searchCfg, apiKey: e.target.value })} placeholder={platform.kind === 'desktop' ? '检索 API Key（经主进程代理发送）' : `检索 API Key（${platform.label}仅内存）`} className="question" />
             <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="检索词（留空则用当前问句）" className="question" />
             <button className="secondary small" disabled={searchBusy} onClick={runSearch}>{searchBusy ? '检索中…' : '联网检索'}</button>
           </div>
@@ -720,20 +733,20 @@ export function App() {
               {AI_PROVIDERS.map((p) => <option key={p.id} value={p.id}>{p.displayName}</option>)}
             </select>
             {aiCfg.providerId === 'custom' && <input value={aiCfg.baseUrl ?? ''} onChange={(e) => setAiCfg({ ...aiCfg, baseUrl: e.target.value })} placeholder="自定义 baseUrl，如 http://localhost:11434/v1" className="question" />}
-            <input type={aiKeyVisible ? 'text' : 'password'} value={aiCfg.apiKey} onChange={(e) => setAiCfg({ ...aiCfg, apiKey: e.target.value })} placeholder={isDesktop() ? 'API Key（DPAPI 加密落盘，不进 localStorage）' : 'API Key（仅保存在内存，不落盘）'} className="question" />
+            <input type={aiKeyVisible ? 'text' : 'password'} value={aiCfg.apiKey} onChange={(e) => setAiCfg({ ...aiCfg, apiKey: e.target.value })} placeholder={platform.kind === 'desktop' ? 'API Key（DPAPI 加密落盘，不进 localStorage）' : `API Key（${platform.label}仅保存在内存）`} className="question" />
             <input value={aiCfg.model} onChange={(e) => setAiCfg({ ...aiCfg, model: e.target.value })} placeholder="模型名（如 deepseek-chat / glm-4-flash / qwen-plus）" className="question" />
             <div className="row">
               <button className="primary small" onClick={runTest}>测试连接</button>
               <button className="secondary small" onClick={async () => {
                 if (!aiCfg.apiKey) { setKeyMsg('请先输入 API Key'); return; }
                 try {
-                  const msg = await saveApiKey(aiCfg.apiKey);
-                  setKeyMsg(msg);
-                  setAiCfg({ ...aiCfg, apiKey: '' });
+                  const result = await saveApiKey(aiCfg.apiKey);
+                  setKeyMsg(result.message);
+                  if (result.persisted) setAiCfg({ ...aiCfg, apiKey: '' });
                 } catch (e) {
                   setKeyMsg(`保存失败：${(e as Error).message}`);
                 }
-              }}>安全保存 Key</button>
+              }}>{platform.kind === 'desktop' ? '安全保存 Key' : '仅在本页使用'}</button>
               <label className="check"><input type="checkbox" checked={aiKeyVisible} onChange={(e) => setAiKeyVisible(e.target.checked)} /> 显示 Key</label>
               <label className="check"><input type="checkbox" checked={anonymize} onChange={(e) => setAnonymize(e.target.checked)} /> 匿名化盘面</label>
               <button className="primary small" disabled={aiBusy || !chart} onClick={runAi}>{aiBusy ? 'AI 分析中…' : 'AI 精解当前盘面'}</button>
@@ -760,7 +773,7 @@ export function App() {
               )}
             </div>
           )}
-          <p className="meta">隐私提示：{isDesktop() ? '桌面版 Key 经 DPAPI 加密后保存在当前系统用户目录，明文不进入 localStorage；' : 'Web 版 Key 仅存于本页内存；'}请求将发送至所选厂商，厂商按自身政策处理；请勿输入姓名/出生地等敏感信息（可开启匿名化）。</p>
+          <p className="meta">隐私提示：{platform.kind === 'desktop' ? '桌面版 Key 经 DPAPI 加密后保存在当前系统用户目录，明文不进入 localStorage；' : `${platform.label} Key 仅存于本页内存，不写入浏览器存储；`}请求将发送至所选厂商，厂商按自身政策处理；请勿输入姓名/出生地等敏感信息（可开启匿名化）。</p>
         </section>
 
         {chart && (

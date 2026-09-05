@@ -10,5 +10,5 @@
 
 ## 仓库文档
 
-- [操作部署安装手册](../docs/操作部署安装手册.md)
-- [内置知识库引用列表](../docs/内置知识库引用列表.md)
+- [操作部署安装手册](https://github.com/liushikuan63/xuanshu-plus/blob/main/docs/%E6%93%8D%E4%BD%9C%E9%83%A8%E7%BD%B2%E5%AE%89%E8%A3%85%E6%89%8B%E5%86%8C.md)
+- [内置知识库引用列表](https://github.com/liushikuan63/xuanshu-plus/blob/main/docs/%E5%86%85%E7%BD%AE%E7%9F%A5%E8%AF%86%E5%BA%93%E5%BC%95%E7%94%A8%E5%88%97%E8%A1%A8.md)

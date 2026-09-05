@@ -187,6 +187,11 @@ details summary { cursor: pointer; color: var(--accent); font-size: 14px; margin
 .compatibility-list article[data-verdict="注意"] span { color: #c62828; }
 .compatibility-list article p { margin: 4px 0; font-size: 13px; line-height: 1.6; }
 .compatibility-list article small { color: var(--mut); line-height: 1.5; }
+.compatibility-list article details { margin-top: 6px; }
+.compatibility-list article details summary { font-size: 12px; }
+.compatibility-list article details ul { margin: 5px 0 0; padding-left: 18px; color: var(--mut); font-size: 12px; line-height: 1.6; }
+.qimen-moment-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(140px, 1fr) auto; gap: 10px; align-items: end; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.qimen-moment-row .primary { margin: 0; }
 
 /* 八字分层解读 */
 .jingpi-sections { margin-top: 12px; border-top: 1px solid var(--line); }
@@ -209,6 +214,8 @@ details summary { cursor: pointer; color: var(--accent); font-size: 14px; margin
   .followup-actions { justify-content: flex-start; }
   .destiny-birth-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .fortune-metrics, .bone-parts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .qimen-moment-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .qimen-moment-row .primary { grid-column: 1 / -1; }
 }
 
 @media (max-width: 640px) {
@@ -260,6 +267,8 @@ details summary { cursor: pointer; color: var(--accent); font-size: 14px; margin
   .destiny-action-row { align-items: stretch; flex-direction: column; }
   .destiny-action-row .birth-field { width: 100%; }
   .fortune-metrics, .bone-parts { grid-template-columns: 1fr; }
+  .qimen-moment-row { grid-template-columns: 1fr; }
+  .qimen-moment-row .primary { grid-column: auto; }
 }
 
 @media (pointer: coarse) {

@@ -3,13 +3,15 @@ import {
   baziHehunOf,
   computeBoneWeight,
   fortuneOf,
+  qimenRelationshipOf,
   type BaziHehunResult,
   type BoneWeightResult,
   type DailyFortune,
   type FortuneBirth,
+  type QimenRelationshipResult,
 } from '@xuanshu/core';
 
-type Tool = 'fortune' | 'boneweight' | 'hehun';
+type Tool = 'fortune' | 'boneweight' | 'hehun' | 'qimen';
 type Birth = FortuneBirth & { minute: number };
 
 const INITIAL_BIRTH: Birth = { year: 1990, month: 5, day: 15, hour: 10, minute: 30, gender: 'male' };
@@ -17,6 +19,10 @@ const INITIAL_PARTNER: Birth = { year: 1992, month: 8, day: 20, hour: 14, minute
 
 function localIso(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function localTime(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
 function BirthEditor({
@@ -145,14 +151,41 @@ function HehunResultView({ result }: { result: BaziHehunResult }) {
   );
 }
 
+function QimenRelationshipResultView({ result }: { result: QimenRelationshipResult }) {
+  return (
+    <section className="card destiny-result" aria-live="polite">
+      <div className="section-heading">
+        <div><h2>奇门关系 · 五维分析</h2><p className="meta">{result.chartSummary}</p></div>
+        <span className="compatibility-score">{result.score}<small>/ 90</small></span>
+      </div>
+      <p className="plain-summary">{result.summary}</p>
+      <div className="compatibility-list">
+        {result.items.map((item) => (
+          <article key={item.id} data-verdict={item.verdict}>
+            <div><b>{item.label}</b><span>{item.verdict} · {item.scoreEffect > 0 ? '+' : ''}{item.scoreEffect}</span></div>
+            <p>{item.detail}</p>
+            <small>{item.explanation}</small>
+            <details><summary>盘面依据（{item.basis.length} 项）</summary><ul>{item.basis.map((basis) => <li key={basis}>{basis}</li>)}</ul></details>
+          </article>
+        ))}
+      </div>
+      <p className="meta">{result.disclaimer}</p>
+    </section>
+  );
+}
+
 export function DestinyToolsView() {
+  const now = new Date();
   const [tool, setTool] = useState<Tool>('fortune');
   const [birth, setBirth] = useState<Birth>(INITIAL_BIRTH);
   const [partner, setPartner] = useState<Birth>(INITIAL_PARTNER);
   const [targetDate, setTargetDate] = useState(localIso(new Date()));
+  const [qimenDate, setQimenDate] = useState(localIso(now));
+  const [qimenTime, setQimenTime] = useState(localTime(now));
   const [fortune, setFortune] = useState<DailyFortune | null>(null);
   const [boneWeight, setBoneWeight] = useState<BoneWeightResult | null>(null);
   const [hehun, setHehun] = useState<BaziHehunResult | null>(null);
+  const [qimen, setQimen] = useState<QimenRelationshipResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -202,13 +235,30 @@ export function DestinyToolsView() {
     }
   }
 
+  async function runQimen(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      const [year, month, day] = qimenDate.split('-').map(Number);
+      const [hour, minute] = qimenTime.split(':').map(Number);
+      if (!year || !month || !day || hour === undefined || minute === undefined) throw new Error('请选择有效的问事日期和时间');
+      setQimen(await qimenRelationshipOf({ year, month, day, hour, minute }));
+    } catch (cause) {
+      setQimen(null);
+      setError((cause as Error).message || '奇门关系分析失败');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <>
       <section className="card destiny-tools">
         <div className="section-heading">
           <div><h2>命理工具</h2><p className="meta">规则透明、结果可复核的传统文化参考</p></div>
           <div className="chips destiny-tabs" role="tablist" aria-label="命理工具">
-            {([['fortune', '今日参考'], ['boneweight', '称骨'], ['hehun', '双人合盘']] as const).map(([id, label]) => (
+            {([['fortune', '今日参考'], ['boneweight', '称骨'], ['hehun', '双人合盘'], ['qimen', '奇门关系']] as const).map(([id, label]) => (
               <button key={id} type="button" role="tab" aria-selected={tool === id} className={`chip ${tool === id ? 'active' : ''}`} onClick={() => selectTool(id)}>{label}</button>
             ))}
           </div>
@@ -240,12 +290,23 @@ export function DestinyToolsView() {
             <button className="primary" type="submit" disabled={busy}>{busy ? '分析中…' : '生成七维合盘'}</button>
           </form>
         )}
+
+        {tool === 'qimen' && (
+          <form onSubmit={runQimen}>
+            <div className="qimen-moment-row">
+              <label className="birth-field" htmlFor="qimen-date"><span>问事日期</span><input id="qimen-date" className="num" type="date" value={qimenDate} onChange={(event) => setQimenDate(event.target.value)} /></label>
+              <label className="birth-field" htmlFor="qimen-time"><span>问事时间</span><input id="qimen-time" className="num" type="time" value={qimenTime} onChange={(event) => setQimenTime(event.target.value)} /></label>
+              <button className="primary" type="submit" disabled={busy}>{busy ? '起局分析中…' : '生成奇门关系盘'}</button>
+            </div>
+          </form>
+        )}
         <ResultError message={error} />
       </section>
 
       {tool === 'fortune' && fortune && <FortuneResult result={fortune} />}
       {tool === 'boneweight' && boneWeight && <BoneWeightResultView result={boneWeight} />}
       {tool === 'hehun' && hehun && <HehunResultView result={hehun} />}
+      {tool === 'qimen' && qimen && <QimenRelationshipResultView result={qimen} />}
     </>
   );
 }
